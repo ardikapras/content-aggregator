@@ -5,7 +5,7 @@ import org.jetbrains.exposed.sql.Column
 import org.jetbrains.exposed.sql.javatime.datetime
 import java.time.LocalDateTime
 
-object NewsSources : IntIdTable() {
+object NewsSources : IntIdTable("news_sources") {
     val name: Column<String> = varchar("name", 255)
     val endpointUrl: Column<String> = varchar("endpoint_url", 2048).uniqueIndex()
     val isActive: Column<Boolean> = bool("is_active").default(true)

@@ -6,7 +6,7 @@ import org.jetbrains.exposed.dao.IntEntityClass
 import org.jetbrains.exposed.dao.id.EntityID
 
 class NewsSourcesDao(id: EntityID<Int>) : IntEntity(id) {
-    companion object : IntEntityClass<com.ardikapras.database.dao.NewsSourcesDao>(NewsSources)
+    companion object : IntEntityClass<NewsSourcesDao>(NewsSources)
 
     var name by NewsSources.name
     var endpointUrl by NewsSources.endpointUrl

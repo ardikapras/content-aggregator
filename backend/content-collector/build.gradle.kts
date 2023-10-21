@@ -5,6 +5,7 @@ val logbackVersion: String by project
 val quartzVersion: String by project
 val kotlinxVersion: String by project
 val hikariVersion: String by project
+val romeVersion: String by project
 
 plugins {
     kotlin("jvm") apply true
@@ -35,5 +36,6 @@ dependencies {
     implementation("ch.qos.logback:logback-classic:$logbackVersion")
     implementation("com.zaxxer:HikariCP:$hikariVersion")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:$kotlinxVersion")
+    implementation("com.rometools:rome:$romeVersion")
     testImplementation("io.ktor:ktor-server-tests")
 }
