@@ -1,0 +1,46 @@
+version: '3'
+services:
+  contentdb:
+    image: postgres:latest
+    restart: always
+    command: postgres -c 'max_connections=200'
+    environment:
+      POSTGRES_DB: postgres
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -d postgres -U postgres" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    ports:
+      - "5432:5432"
+    networks:
+      - backend
+
+  db-setup:
+    image: liquibase/liquibase:latest
+    volumes:
+      # DB repositories to be located at the same level as this
+      - ./database/deploy.sh:/liquibase/deploy.sh
+      - ./database/setup_liquibase.sh:/liquibase/setup_liquibase.sh
+      - ../database:/liquibase/database
+    user: root
+    command: >
+      bash -c
+      "
+        export LIQUIBASE_USERNAME=adminuser
+        export LIQUIBASE_PASSWORD=adminuser
+        export LIQUIBASE_PORT=5432
+        export LIQUIBASE_HOST=contentdb
+        cd /liquibase; . deploy.sh 'contentdb' 'postgres' 'adminuser'
+        echo done
+      "
+    depends_on:
+      contentdb:
+        condition: service_healthy
+    networks:
+      - backend
+
+networks:
+  backend:

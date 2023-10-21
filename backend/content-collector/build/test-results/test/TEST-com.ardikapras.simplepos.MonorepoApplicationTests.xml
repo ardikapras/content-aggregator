@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.ardikapras.simplepos.MonorepoApplicationTests" tests="1" skipped="0" failures="0" errors="0" timestamp="2023-10-15T12:36:53" hostname="DESKTOP-UJBMGDS" time="0.656">
+  <properties/>
+  <testcase name="contextLoads()" classname="com.ardikapras.simplepos.MonorepoApplicationTests" time="0.656"/>
+  <system-out><![CDATA[19:36:51.679 [Test worker] INFO org.springframework.test.context.support.AnnotationConfigContextLoaderUtils -- Could not detect default configuration classes for test class [com.ardikapras.simplepos.MonorepoApplicationTests]: MonorepoApplicationTests does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+19:36:51.775 [Test worker] INFO org.springframework.boot.test.context.SpringBootTestContextBootstrapper -- Found @SpringBootConfiguration com.ardikapras.simplepos.MonorepoApplication for test class com.ardikapras.simplepos.MonorepoApplicationTests
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+ :: Spring Boot ::                (v3.1.4)
+
+2023-10-15T19:36:52.084+07:00  INFO 7276 --- [    Test worker] c.a.simplepos.MonorepoApplicationTests   : Starting MonorepoApplicationTests using Java 17.0.2 with PID 7276 (started by ardikapras in D:\projects\simple-pos\backend\core-api)
+2023-10-15T19:36:52.085+07:00  INFO 7276 --- [    Test worker] c.a.simplepos.MonorepoApplicationTests   : No active profile set, falling back to 1 default profile: "default"
+2023-10-15T19:36:53.206+07:00  INFO 7276 --- [    Test worker] c.a.simplepos.MonorepoApplicationTests   : Started MonorepoApplicationTests in 1.298 seconds (process running for 2.354)
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -1,0 +1,29 @@
+
+databaseChangeLog:
+- changeSet:
+    id:  create-user-contentdb
+    author: ardikapras
+    changes:
+      - sql:
+          splitStatements: false
+          sql: |
+                DO $$
+                BEGIN
+                CREATE ROLE adminuser WITH LOGIN SUPERUSER INHERIT CREATEDB CREATEROLE NOREPLICATION password 'adminuser';
+                EXCEPTION WHEN duplicate_object THEN RAISE NOTICE '%, skipping', SQLERRM USING ERRCODE = SQLSTATE;
+                END
+                $$;
+          stripComments:  true
+          logicalFilePath: path-independent
+          runOnChange: true
+
+- changeSet:
+    id: create-database
+    author: ardikapras
+    runInTransaction: false
+    logicalFilePath: path-independent
+    validCheckSum: ANY
+    changes:
+      - sql:
+          sql: |
+                CREATE DATABASE content WITH OWNER = adminuser ENCODING = 'UTF8' LC_COLLATE = 'en_US.utf8' LC_CTYPE = 'en_US.utf8' CONNECTION_LIMIT = -1;

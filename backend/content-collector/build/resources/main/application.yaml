@@ -1,0 +1,15 @@
+#spring.datasource.url=jdbc:postgresql://localhost:5432/simplepos
+#spring.datasource.username=posuser
+#spring.datasource.password=posuser
+#spring.datasource.driver-class-name=org.postgresql.Driver
+
+ktor:
+  development: true
+  deployment:
+    port: 8080
+    watch:
+      - classes
+      - resources
+  application:
+    modules:
+      - com.ardikapras.ApplicationKt.module
