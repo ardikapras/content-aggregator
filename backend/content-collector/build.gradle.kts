@@ -6,6 +6,8 @@ val quartzVersion: String by project
 val kotlinxVersion: String by project
 val hikariVersion: String by project
 val romeVersion: String by project
+val commonsIoVersion: String by project
+val slf4jVersion: String by project
 
 plugins {
     kotlin("jvm") apply true
@@ -37,5 +39,6 @@ dependencies {
     implementation("com.zaxxer:HikariCP:$hikariVersion")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:$kotlinxVersion")
     implementation("com.rometools:rome:$romeVersion")
+    implementation("org.slf4j:slf4j-api:$slf4jVersion")
     testImplementation("io.ktor:ktor-server-tests")
 }

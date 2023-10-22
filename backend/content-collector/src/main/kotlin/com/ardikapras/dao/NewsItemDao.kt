@@ -1,4 +1,4 @@
-package com.ardikapras.database.dao
+package com.ardikapras.dao
 
 import org.jetbrains.exposed.dao.IntEntity
 import org.jetbrains.exposed.dao.IntEntityClass
@@ -9,7 +9,6 @@ import java.time.LocalDateTime
 
 object NewsItems : IntIdTable("news_items") {
     val newsSourceId = reference("news_source_id", NewsSources)
-    val rawRssDataId = reference("raw_rss_data_id", RawRssData)
     val title = varchar("title", 512)
     val link = varchar("link", 2048)
     val description = text("description")
@@ -22,7 +21,6 @@ class NewsItemDao(id: EntityID<Int>) : IntEntity(id) {
     companion object : IntEntityClass<NewsItemDao>(NewsItems)
 
     var newsSourceId by NewsSourcesDao referencedOn NewsItems.newsSourceId
-    var rawRssDataId by RawRssDataDao referencedOn NewsItems.rawRssDataId
     var title by NewsItems.title
     var link by NewsItems.link
     var description by NewsItems.description

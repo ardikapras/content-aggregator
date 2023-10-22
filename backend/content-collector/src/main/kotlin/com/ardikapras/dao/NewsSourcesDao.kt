@@ -1,4 +1,4 @@
-package com.ardikapras.database.dao
+package com.ardikapras.dao
 
 import org.jetbrains.exposed.dao.IntEntity
 import org.jetbrains.exposed.dao.IntEntityClass

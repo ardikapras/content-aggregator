@@ -1,48 +1,60 @@
 package com.ardikapras.collector
 
+import com.ardikapras.dao.NewsSourcesDao
+import com.ardikapras.util.logger
 import com.rometools.rome.feed.synd.SyndEntry
+import com.rometools.rome.feed.synd.SyndFeed
 import com.rometools.rome.io.SyndFeedInput
 import com.rometools.rome.io.XmlReader
-import kotlinx.coroutines.*
-import java.io.BufferedReader
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import java.net.URL
 import java.security.MessageDigest
 import java.time.ZoneId
 
 class CollectorService(private val repository: CollectorRepository) {
-    suspend fun perform() = coroutineScope {
-        val listOfNewsSource = repository.getAllActiveNewsSources()
-        listOfNewsSource.forEach { newsSource ->
-            launch {
-                val feedUrl = URL(newsSource.endpointUrl)
-                val connection = feedUrl.openConnection()
-                connection.connect()
-                val inputStream = connection.getInputStream()
-                val feedInput = SyndFeedInput()
-//                val content = inputStream.bufferedReader().use(BufferedReader::readText)
-                val feed = feedInput.build(XmlReader(inputStream))
-                val content = feed.toString()
-                val hashRssContent = computeHash(content)
-                if (!repository.isRawRssDataExist(hashRssContent)) {
-                    val rawRssDataId = repository.insertRawRssData(newsSource.id.value, content, hashRssContent)
-                    feed.entries.forEach { entry: SyndEntry ->
-                        println("processing ${entry.title} - ${entry.link}")
-                        val hash = computeHash(entry.title + entry.link)
-                        if (!repository.isNewsItemExist(hash)) {
-                            repository.insertNewsItem(
-                                newsSource.id.value,
-                                rawRssDataId,
-                                entry.title,
-                                entry.link,
-                                entry.description.value,
-                                entry.publishedDate.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime(),
-                                hash
-                            )
-                        }
-                    }
+    fun perform() {
+        repository.getAllActiveNewsSources().forEach { newsSource ->
+            CoroutineScope(Dispatchers.IO).launch {
+                newsSource.fetchFeed()?.let { feed ->
+                    processFeed(newsSource, feed)
                 }
-                inputStream.close()
             }
+        }
+    }
+
+    private fun NewsSourcesDao.fetchFeed(): SyndFeed? {
+        val feedUrl = URL(this.endpointUrl)
+        val connection = feedUrl.openConnection()
+        connection.connect()
+
+        val inputStream = connection.getInputStream()
+        val feedInput = SyndFeedInput()
+
+        return feedInput.build(XmlReader(inputStream))
+    }
+
+    private fun processFeed(newsSourcesDao: NewsSourcesDao, feed: SyndFeed) {
+        logger.info("process feed: ${newsSourcesDao.endpointUrl}")
+
+        feed.entries.forEach { entry ->
+            processEntry(newsSourcesDao, entry)
+        }
+    }
+
+    private fun processEntry(newsSourcesDao: NewsSourcesDao, entry: SyndEntry) {
+        val hash = computeHash(entry.title + entry.link)
+        if (!repository.isNewsItemExist(hash)) {
+            logger.info("process entry: ${entry.title}")
+            repository.insertNewsItem(
+                newsSourcesDao.id.value,
+                entry.title,
+                entry.link,
+                entry.description.value,
+                entry.publishedDate.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime(),
+                hash
+            )
         }
     }
 

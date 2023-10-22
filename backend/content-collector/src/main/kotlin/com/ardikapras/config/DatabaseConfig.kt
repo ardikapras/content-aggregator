@@ -1,8 +1,7 @@
 package com.ardikapras.config
 
-import com.ardikapras.database.dao.NewsItems
-import com.ardikapras.database.dao.NewsSources
-import com.ardikapras.database.dao.RawRssData
+import com.ardikapras.dao.NewsItems
+import com.ardikapras.dao.NewsSources
 import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
 import org.jetbrains.exposed.sql.Database
@@ -16,7 +15,6 @@ object DatabaseConfig {
         transaction {
             SchemaUtils.create(NewsItems)
             SchemaUtils.create(NewsSources)
-            SchemaUtils.create(RawRssData)
         }
     }
 
