@@ -8,10 +8,12 @@ val hikariVersion: String by project
 val romeVersion: String by project
 val commonsIoVersion: String by project
 val slf4jVersion: String by project
+val kafkaVersion: String by project
 
 plugins {
     kotlin("jvm") apply true
-    id("io.ktor.plugin") version "2.3.5"
+    kotlin("plugin.serialization")
+    id("io.ktor.plugin")
 }
 
 group = "com.ardikapras"
@@ -40,5 +42,6 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:$kotlinxVersion")
     implementation("com.rometools:rome:$romeVersion")
     implementation("org.slf4j:slf4j-api:$slf4jVersion")
+    implementation("org.apache.kafka:kafka-clients:$kafkaVersion")
     testImplementation("io.ktor:ktor-server-tests")
 }

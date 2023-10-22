@@ -1,7 +1,7 @@
 # backend:content-collector
 
 ## Local Environment
-
+- Run `docker volume create contentdata` to create docker volume
 - Run `docker compose up -d` from folder [docker-environment](../../docker-environment)
 - Run `gradlew backend:content-collector:run`
 

@@ -5,6 +5,7 @@ import com.ardikapras.collector.CollectorRepository
 import com.ardikapras.collector.CollectorService
 import com.ardikapras.collector.configureRouting
 import com.ardikapras.config.DatabaseConfig
+import com.ardikapras.config.KafkaConfig
 import io.ktor.server.application.*
 import io.ktor.server.netty.*
 
@@ -14,7 +15,7 @@ fun Application.module() {
     DatabaseConfig.init()
 
     val collectorRepository = CollectorRepository()
-    val collectorService = CollectorService(collectorRepository)
+    val collectorService = CollectorService(collectorRepository, KafkaConfig.producerProps)
     val collectorJob = CollectorJob(collectorService)
     configureRouting(collectorJob)
 }

@@ -22,9 +22,9 @@ class CollectorRepository {
         description: String,
         publishedDate: LocalDateTime,
         hash: String,
-    ) {
-        transaction {
-            NewsItemDao.new {
+    ): Int {
+        return transaction {
+            val newsItem = NewsItemDao.new {
                 this.newsSourceId = NewsSourcesDao[newsSourceId]
                 this.title = title
                 this.link = link
@@ -32,6 +32,8 @@ class CollectorRepository {
                 this.publishedAt = publishedDate
                 this.contentHash = hash
             }
+
+            newsItem.id.value
         }
     }
 }
