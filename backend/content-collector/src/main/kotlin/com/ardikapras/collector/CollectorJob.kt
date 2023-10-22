@@ -21,7 +21,7 @@ class CollectorJob(private val task: CollectorService) {
         job = null
     }
 
-    fun triggerManually() {
+    suspend fun triggerManually() {
         task.perform()
     }
 }

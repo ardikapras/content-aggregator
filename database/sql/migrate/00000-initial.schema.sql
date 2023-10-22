@@ -44,4 +44,36 @@ insert into news_sources (name, endpoint_url) values ('CNBC ID - My Money', 'htt
 insert into news_sources (name, endpoint_url) values ('CNBC ID - Cuap Cuap Cuan', 'https://www.cnbcindonesia.com/cuap-cuap-cuan/rss');
 insert into news_sources (name, endpoint_url) values ('CNBC ID - Research', 'https://www.cnbcindonesia.com/research/rss');
 
+CREATE TABLE raw_rss_data
+(
+    id             SERIAL PRIMARY KEY,                                         -- A unique identifier for each record
+    news_source_id INT REFERENCES news_sources (id),
+    status         VARCHAR(255)                      DEFAULT 'success',        -- Can be 'success', 'error', etc., to indicate fetch status
+    error_message  TEXT                              DEFAULT '',               -- In case there was an error fetching or processing the feed, store the error message
+    rss_content    TEXT                     NOT NULL,                          -- The full raw content of the RSS feed
+    content_hash   VARCHAR(64),                                                -- A hash of the content; can be used to quickly detect if content has changed since last fetch
+    collected_at   TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP -- When the RSS data was fetched
+);
+
+CREATE INDEX idx_source_url ON raw_rss_data (news_source_id);
+CREATE INDEX idx_content_hash ON raw_rss_data (content_hash);
+
+CREATE TABLE news_items
+(
+    id              SERIAL PRIMARY KEY,
+    raw_rss_data_id INT REFERENCES raw_rss_data (id),
+    news_source_id  INT REFERENCES news_sources (id),
+    title           VARCHAR(512)                NOT NULL,
+    link            VARCHAR(2048)               NOT NULL,
+    description     TEXT,
+    published_at    TIMESTAMP WITHOUT TIME ZONE NOT NULL,
+    content_hash    VARCHAR(64) UNIQUE          NOT NULL, -- Ensuring the uniqueness of news based on the content hash
+    created_at      TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at      TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_news_items_news_source_id ON news_items (news_source_id);
+CREATE INDEX idx_news_items_published_at ON news_items (published_at);
+
+
 -- PostgreSQL database dump complete
