@@ -1,4 +1,4 @@
-package com.ardikapras.util
+package com.ardikapras.constant
 
 object KafkaTopics {
     const val CONTENT_TO_SCRAPE = "news_content_to_scrape"

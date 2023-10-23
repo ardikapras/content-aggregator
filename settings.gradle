@@ -12,4 +12,4 @@ pluginManagement {
 
 rootProject.name = 'content-aggregator'
 
-include ':frontend:main-app', ':backend:content-collector'
+include ':frontend:main-app', ':backend:content-collector', ':backend:content-scraper', ':backend:shared-lib'

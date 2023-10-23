@@ -1,7 +1,7 @@
 package com.ardikapras.collector
 
 import com.ardikapras.dao.NewsSource
-import com.ardikapras.util.KafkaTopics.CONTENT_TO_SCRAPE
+import com.ardikapras.constant.KafkaTopics.CONTENT_TO_SCRAPE
 import com.ardikapras.util.logger
 import com.rometools.rome.feed.synd.SyndEntry
 import com.rometools.rome.feed.synd.SyndFeed
