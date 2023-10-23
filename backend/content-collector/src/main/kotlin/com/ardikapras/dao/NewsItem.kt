@@ -17,10 +17,10 @@ object NewsItems : IntIdTable("news_items") {
     val createdAt = datetime("created_at").default(LocalDateTime.now())
     val updatedAt = datetime("updated_at").default(LocalDateTime.now())
 }
-class NewsItemDao(id: EntityID<Int>) : IntEntity(id) {
-    companion object : IntEntityClass<NewsItemDao>(NewsItems)
+class NewsItem(id: EntityID<Int>) : IntEntity(id) {
+    companion object : IntEntityClass<NewsItem>(NewsItems)
 
-    var newsSourceId by NewsSourcesDao referencedOn NewsItems.newsSourceId
+    var newsSourceId by NewsSource referencedOn NewsItems.newsSourceId
     var title by NewsItems.title
     var link by NewsItems.link
     var description by NewsItems.description

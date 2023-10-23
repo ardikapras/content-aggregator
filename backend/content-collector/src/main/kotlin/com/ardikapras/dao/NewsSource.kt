@@ -17,8 +17,8 @@ object NewsSources : IntIdTable("news_sources") {
     val updatedAt: Column<LocalDateTime> = datetime("updated_at").default(LocalDateTime.now())
 }
 
-class NewsSourcesDao(id: EntityID<Int>) : IntEntity(id) {
-    companion object : IntEntityClass<NewsSourcesDao>(NewsSources)
+class NewsSource(id: EntityID<Int>) : IntEntity(id) {
+    companion object : IntEntityClass<NewsSource>(NewsSources)
 
     var name by NewsSources.name
     var endpointUrl by NewsSources.endpointUrl

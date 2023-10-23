@@ -1,6 +1,6 @@
 package com.ardikapras.collector
 
-import com.ardikapras.dao.NewsSourcesDao
+import com.ardikapras.dao.NewsSource
 import com.ardikapras.util.KafkaTopics.CONTENT_TO_SCRAPE
 import com.ardikapras.util.logger
 import com.rometools.rome.feed.synd.SyndEntry
@@ -10,7 +10,6 @@ import com.rometools.rome.io.XmlReader
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import org.apache.kafka.clients.producer.KafkaProducer
@@ -32,7 +31,7 @@ class CollectorService(private val repository: CollectorRepository, private val 
         }
     }
 
-    private fun NewsSourcesDao.fetchFeed(): SyndFeed? {
+    private fun NewsSource.fetchFeed(): SyndFeed? {
         val feedUrl = URL(this.endpointUrl)
         val connection = feedUrl.openConnection()
         connection.connect()
@@ -43,19 +42,19 @@ class CollectorService(private val repository: CollectorRepository, private val 
         return feedInput.build(XmlReader(inputStream))
     }
 
-    private fun processFeed(newsSourcesDao: NewsSourcesDao, feed: SyndFeed) {
-        logger.info("process feed: ${newsSourcesDao.endpointUrl}")
+    private fun processFeed(newsSource: NewsSource, feed: SyndFeed) {
+        logger.info("process feed: ${newsSource.endpointUrl}")
 
         feed.entries.forEach { entry ->
-            processEntry(newsSourcesDao, entry)
+            processEntry(newsSource, entry)
         }
     }
 
-    private fun processEntry(newsSourcesDao: NewsSourcesDao, entry: SyndEntry) {
+    private fun processEntry(newsSource: NewsSource, entry: SyndEntry) {
         val hash = computeHash(entry.title + entry.link)
         if (!repository.isNewsItemExist(hash)) {
             logger.info("process entry: ${entry.title}")
-            val newsSourceId = newsSourcesDao.id.value
+            val newsSourceId = newsSource.id.value
             val newsItemId = repository.insertNewsItem(
                 newsSourceId,
                 entry.title,
@@ -64,7 +63,7 @@ class CollectorService(private val repository: CollectorRepository, private val 
                 entry.publishedDate.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime(),
                 hash
             )
-            val newsItem = NewsItem(newsItemId, entry.link)
+            val newsItem = NewsItemDto(newsItemId, entry.link)
             val record = ProducerRecord(CONTENT_TO_SCRAPE, newsSourceId.toString(), Json.encodeToString(newsItem))
             producer.send(record)
         }
@@ -75,6 +74,3 @@ class CollectorService(private val repository: CollectorRepository, private val 
         return bytes.joinToString("") { "%02x".format(it) }
     }
 }
-
-@Serializable
-data class NewsItem(val newsItemId: Int, val newsItemUrl: String)
