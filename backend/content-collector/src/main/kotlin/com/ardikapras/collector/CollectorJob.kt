@@ -3,7 +3,8 @@ package com.ardikapras.collector
 import kotlinx.coroutines.*
 
 class CollectorJob(private val task: CollectorService) {
-    private var job: Job? = null
+    var job: Job? = null
+        private set
 
     fun start() {
         if (job == null || job?.isActive == false) {
