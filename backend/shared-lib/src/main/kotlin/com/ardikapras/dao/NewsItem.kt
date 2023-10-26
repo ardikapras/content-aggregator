@@ -12,11 +12,13 @@ object NewsItems : IntIdTable("news_items") {
     val title = varchar("title", 512)
     val link = varchar("link", 2048)
     val description = text("description")
+    val content = text("content").default("")
     val publishedAt = datetime("published_at")
     val contentHash = varchar("content_hash", 64) // SHA-256 hash
     val createdAt = datetime("created_at").default(LocalDateTime.now())
     val updatedAt = datetime("updated_at").default(LocalDateTime.now())
 }
+
 class NewsItem(id: EntityID<Int>) : IntEntity(id) {
     companion object : IntEntityClass<NewsItem>(NewsItems)
 
@@ -24,6 +26,7 @@ class NewsItem(id: EntityID<Int>) : IntEntity(id) {
     var title by NewsItems.title
     var link by NewsItems.link
     var description by NewsItems.description
+    var content by NewsItems.content
     var publishedAt by NewsItems.publishedAt
     var contentHash by NewsItems.contentHash
     var createdAt by NewsItems.createdAt

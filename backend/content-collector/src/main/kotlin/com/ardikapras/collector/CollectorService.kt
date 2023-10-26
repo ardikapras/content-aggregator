@@ -1,7 +1,8 @@
 package com.ardikapras.collector
 
-import com.ardikapras.dao.NewsSource
 import com.ardikapras.constant.KafkaTopics.CONTENT_TO_SCRAPE
+import com.ardikapras.dao.NewsSource
+import com.ardikapras.dto.NewsItemDto
 import com.ardikapras.util.logger
 import com.rometools.rome.feed.synd.SyndEntry
 import com.rometools.rome.feed.synd.SyndFeed
@@ -46,24 +47,25 @@ class CollectorService(private val repository: CollectorRepository, private val 
         logger.info("process feed: ${newsSource.endpointUrl}")
 
         feed.entries.forEach { entry ->
-            processEntry(newsSource, entry)
+            processEntry(newsSource, entry, feed.link)
         }
     }
 
-    private fun processEntry(newsSource: NewsSource, entry: SyndEntry) {
+    private fun processEntry(newsSource: NewsSource, entry: SyndEntry, baseUrl: String) {
         val hash = computeHash(entry.title + entry.link)
         if (!repository.isNewsItemExist(hash)) {
             logger.info("process entry: ${entry.title}")
             val newsSourceId = newsSource.id.value
+            val entryLink = getAbsoluteLink(entry.link, baseUrl)
             val newsItemId = repository.insertNewsItem(
                 newsSourceId,
                 entry.title,
-                entry.link,
+                entryLink,
                 entry.description.value,
                 entry.publishedDate.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime(),
                 hash
             )
-            val newsItem = NewsItemDto(newsItemId, entry.link)
+            val newsItem = NewsItemDto(newsItemId, entryLink, newsSource.parsingStrategy)
             val record = ProducerRecord(CONTENT_TO_SCRAPE, newsSourceId.toString(), Json.encodeToString(newsItem))
             producer.send(record)
         }
@@ -72,5 +74,11 @@ class CollectorService(private val repository: CollectorRepository, private val 
     private fun computeHash(content: String): String {
         val bytes = MessageDigest.getInstance("SHA-256").digest(content.toByteArray())
         return bytes.joinToString("") { "%02x".format(it) }
+    }
+
+    private fun getAbsoluteLink(link: String, baseUrl: String): String {
+        return if (link.startsWith("http://") || link.startsWith("https://")) {
+            link
+        } else baseUrl + link
     }
 }

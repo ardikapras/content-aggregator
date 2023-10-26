@@ -27,6 +27,7 @@ dependencies {
     implementation("org.jetbrains.exposed:exposed-jdbc:$exposedVersion")
     implementation("org.postgresql:postgresql:$postgresVersion")
     implementation("com.zaxxer:HikariCP:$hikariVersion")
+    implementation("io.ktor:ktor-serialization-kotlinx-json-jvm")
 }
 
 tasks.withType<KotlinCompile> {

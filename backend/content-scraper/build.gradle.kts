@@ -6,6 +6,8 @@ val logbackVersion: String by project
 val exposedVersion: String by project
 val postgresVersion: String by project
 val hikariVersion: String by project
+val jsoupVersion: String by project
+val kafkaVersion: String by project
 
 plugins {
     kotlin("jvm")
@@ -43,6 +45,8 @@ dependencies {
     implementation("ch.qos.logback:logback-classic:$logbackVersion")
     implementation("com.zaxxer:HikariCP:$hikariVersion")
     implementation("io.ktor:ktor-server-config-yaml:$ktorVersion")
+    implementation("org.jsoup:jsoup:$jsoupVersion")
+    implementation("org.apache.kafka:kafka-clients:$kafkaVersion")
     testImplementation("io.ktor:ktor-server-tests-jvm")
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit:$kotlinVersion")
 }
