@@ -3,8 +3,6 @@
 
 -- Antara
 insert into news_sources (name, endpoint_url, parsing_strategy) values ('Antara News Terkini', 'https://www.antaranews.com/rss/terkini.xml','ANTARA');
-insert into news_sources (name, endpoint_url, parsing_strategy) values ('Antara News Galeri Photo', 'https://www.antaranews.com/rss/photo.xml','ANTARA');
-insert into news_sources (name, endpoint_url, parsing_strategy) values ('Antara News Video', 'https://www.antaranews.com/rss/video.xml','ANTARA');
 insert into news_sources (name, endpoint_url, parsing_strategy) values ('Antara Top News', 'https://www.antaranews.com/rss/top-news.xml','ANTARA');
 insert into news_sources (name, endpoint_url, parsing_strategy) values ('Antara Politik', 'https://www.antaranews.com/rss/politik.xml','ANTARA');
 insert into news_sources (name, endpoint_url, parsing_strategy) values ('Antara Hukum', 'https://www.antaranews.com/rss/hukum.xml','ANTARA');
@@ -33,3 +31,16 @@ insert into news_sources (name, endpoint_url, parsing_strategy) values ('CNBC ID
 insert into news_sources (name, endpoint_url, parsing_strategy) values ('CNBC ID - My Money', 'https://www.cnbcindonesia.com/mymoney/rss','CNBC');
 insert into news_sources (name, endpoint_url, parsing_strategy) values ('CNBC ID - Cuap Cuap Cuan', 'https://www.cnbcindonesia.com/cuap-cuap-cuan/rss','CNBC');
 insert into news_sources (name, endpoint_url, parsing_strategy) values ('CNBC ID - Research', 'https://www.cnbcindonesia.com/research/rss','CNBC');
+
+-- CNN Indonesia
+insert into news_sources (name, endpoint_url, parsing_strategy) values ('CNN ID', 'https://www.cnnindonesia.com/rss','CNN');
+insert into news_sources (name, endpoint_url, parsing_strategy) values ('CNN ID - Nasional', 'https://www.cnnindonesia.com/nasional/rss','CNN');
+insert into news_sources (name, endpoint_url, parsing_strategy) values ('CNN ID - Internasional', 'https://www.cnnindonesia.com/internasional/rss','CNN');
+insert into news_sources (name, endpoint_url, parsing_strategy) values ('CNN ID - Ekonomi', 'https://www.cnnindonesia.com/ekonomi/rss','CNN');
+insert into news_sources (name, endpoint_url, parsing_strategy) values ('CNN ID - Olahraga', 'https://www.cnnindonesia.com/olahraga/rss','CNN');
+insert into news_sources (name, endpoint_url, parsing_strategy) values ('CNN ID - Teknologi', 'https://www.cnnindonesia.com/teknologi/rss','CNN');
+insert into news_sources (name, endpoint_url, parsing_strategy) values ('CNN ID - Hiburan', 'https://www.cnnindonesia.com/hiburan/rss','CNN');
+insert into news_sources (name, endpoint_url, parsing_strategy) values ('CNN ID - Gaya Hidup', 'https://www.cnnindonesia.com/gaya-hidup/rss','CNN');
+
+-- JPNN - Jaringan Pemberitaan Nusantara Negeriku
+insert into news_sources (name, endpoint_url, parsing_strategy) values ('JPNN', 'https://www.jpnn.com/index.php?mib=rss','JPNN');

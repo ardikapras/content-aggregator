@@ -1,0 +1,10 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="Content Collector" type="JetRunConfigurationType">
+    <option name="MAIN_CLASS_NAME" value="com.ardikapras.ApplicationKt" />
+    <module name="content-aggregator.backend.content-collector.main" />
+    <shortenClasspath name="NONE" />
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
+  </configuration>
+</component>

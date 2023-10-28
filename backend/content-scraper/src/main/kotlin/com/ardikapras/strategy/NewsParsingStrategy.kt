@@ -10,6 +10,8 @@ fun interface NewsParsingStrategy {
 object NewsStrategyManager {
     val parseStrategyMap = mapOf(
         "ANTARA" to AntaraNews(),
-        "CNBC" to CnbcNews()
+        "CNBC" to CnbcNews(),
+        "CNN" to CnnNews(),
+        "JPNN" to JpnnNews(),
     )
 }
