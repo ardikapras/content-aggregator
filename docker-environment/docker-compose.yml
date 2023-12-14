@@ -33,6 +33,8 @@ services:
         export LIQUIBASE_PASSWORD=adminuser
         export LIQUIBASE_PORT=5432
         export LIQUIBASE_HOST=contentdb
+        chmod 777 /liquibase/deploy.sh
+        chmod 777 /liquibase/setup_liquibase.sh
         cd /liquibase; . deploy.sh 'contentdb' 'postgres' 'adminuser'
         echo done
       "
