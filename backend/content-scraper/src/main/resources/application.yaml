@@ -3,9 +3,9 @@ spring:
     name: content-scraper
 
   datasource:
-    url: jdbc:postgresql://localhost:5432/newsdb
-    username: postgres
-    password: postgres
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/newsdb}
+    username: ${SPRING_DATASOURCE_USERNAME:postgres}
+    password: ${SPRING_DATASOURCE_PASSWORD:postgres}
     driver-class-name: org.postgresql.Driver
   jpa:
     properties:
@@ -20,6 +20,12 @@ spring:
     minimum-idle: 5
   lifecycle:
     timeout-per-shutdown-phase: 30s
+  kafka:
+    bootstrap-servers: ${SPRING_KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+
+app:
+  max-retry-count: ${APP_MAX_RETRY_COUNT:3}
+
 logging:
   level:
     root: info

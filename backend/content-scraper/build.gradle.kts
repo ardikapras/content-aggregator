@@ -89,9 +89,6 @@ dependencies {
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit5")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 
-    // Development Tools
-    developmentOnly("org.springframework.boot:spring-boot-devtools")
-
     // Retryable
     implementation("org.springframework.retry:spring-retry:${Versions.SPRING_RETRY}")
     implementation("org.springframework.boot:spring-boot-starter-aop")
