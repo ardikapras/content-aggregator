@@ -1,62 +1,124 @@
-import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
-
-val ktorVersion: String by project
-val kotlinVersion: String by project
-val logbackVersion: String by project
-val exposedVersion: String by project
-val postgresVersion: String by project
-val hikariVersion: String by project
-val jsoupVersion: String by project
-val kafkaVersion: String by project
-
 plugins {
-    kotlin("jvm")
-    kotlin("plugin.serialization")
-    id("io.ktor.plugin")
+    kotlin("jvm") version "2.1.10"
+    kotlin("plugin.spring") version "2.1.10"
+    kotlin("plugin.jpa") version "2.1.10"
+    id("org.springframework.boot") version "3.4.3"
+    id("io.spring.dependency-management") version "1.1.7"
+    id("org.jlleitschuh.gradle.ktlint") version "12.2.0"
 }
+
+group = "io.news"
+version = "0.0.1-SNAPSHOT"
 
 java {
-    sourceCompatibility = JavaVersion.VERSION_11
-    targetCompatibility = JavaVersion.VERSION_11
-}
-
-group = "com.ardikapras"
-version = "0.0.1"
-
-application {
-    mainClass.set("com.ardikapras.ApplicationKt")
-
-    val isDevelopment: Boolean = project.ext.has("development")
-    applicationDefaultJvmArgs = listOf("-Dio.ktor.development=$isDevelopment")
-}
-
-dependencies {
-    implementation(project(":backend:shared-lib"))
-
-    implementation("io.ktor:ktor-server-core-jvm")
-    implementation("io.ktor:ktor-server-content-negotiation-jvm")
-    implementation("io.ktor:ktor-serialization-kotlinx-json-jvm")
-    implementation("org.jetbrains.exposed:exposed-core:$exposedVersion")
-    implementation("org.jetbrains.exposed:exposed-dao:$exposedVersion")
-    implementation("org.jetbrains.exposed:exposed-java-time:$exposedVersion")
-    implementation("org.jetbrains.exposed:exposed-jdbc:$exposedVersion")
-    implementation("org.postgresql:postgresql:$postgresVersion")
-    implementation("io.ktor:ktor-server-netty-jvm")
-    implementation("ch.qos.logback:logback-classic:$logbackVersion")
-    implementation("com.zaxxer:HikariCP:$hikariVersion")
-    implementation("io.ktor:ktor-server-config-yaml:$ktorVersion")
-    implementation("org.jsoup:jsoup:$jsoupVersion")
-    implementation("org.apache.kafka:kafka-clients:$kafkaVersion")
-    testImplementation("io.ktor:ktor-server-tests-jvm")
-    testImplementation("org.jetbrains.kotlin:kotlin-test-junit:$kotlinVersion")
-}
-
-tasks.withType<KotlinCompile> {
-    kotlinOptions {
-        kotlinOptions.jvmTarget = "11"
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
     }
 }
 
-tasks.test {
+configurations {
+    compileOnly {
+        extendsFrom(configurations.annotationProcessor.get())
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+
+object Versions {
+    const val COROUTINES = "1.10.1"
+    const val JSOUP = "1.19.1"
+    const val POSTGRESQL = "42.7.5"
+    const val H2DB = "2.3.232"
+    const val KOTLIN_LOGGING = "7.0.5"
+    const val IO_MOCKK = "1.13.17"
+    const val SPRING_MOCK = "4.0.2"
+    const val KOTLIN = "2.1.10"
+    const val JACKSON = "2.18.3"
+    const val SPRING_RETRY = "2.0.11"
+    const val KOTLIN_SERIALIZATION = "1.8.0"
+    const val GCP_POSTGRESQL = "1.24.0"
+    const val ROME = "2.1.0"
+    const val SPRING_KAFKA = "3.3.4"
+}
+
+dependencies {
+    // Spring Boot
+    implementation("org.springframework.boot:spring-boot-starter-data-jpa")
+    implementation("org.springframework.boot:spring-boot-starter-web")
+    implementation("org.springframework.boot:spring-boot-starter-webflux")
+    implementation("org.springframework.boot:spring-boot-starter-validation")
+    implementation("org.springframework.boot:spring-boot-starter-actuator")
+
+    // kafka
+    implementation("org.springframework.kafka:spring-kafka:${Versions.SPRING_KAFKA}")
+
+    // XML parser
+    implementation("com.rometools:rome:${Versions.ROME}")
+
+    // Kotlin
+    implementation("org.jetbrains.kotlin:kotlin-reflect:${Versions.KOTLIN}")
+    implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8:${Versions.KOTLIN}")
+    implementation("com.fasterxml.jackson.module:jackson-module-kotlin:${Versions.JACKSON}")
+
+    // Coroutines
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:${Versions.COROUTINES}")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-reactor:${Versions.COROUTINES}")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-jdk8:${Versions.COROUTINES}")
+
+    // Serialization
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:${Versions.KOTLIN_SERIALIZATION}")
+
+    // Web Scraping
+    implementation("org.jsoup:jsoup:${Versions.JSOUP}")
+
+    // Database
+    runtimeOnly("org.postgresql:postgresql:${Versions.POSTGRESQL}")
+
+    // Logging
+    implementation("io.github.oshai:kotlin-logging:${Versions.KOTLIN_LOGGING}")
+
+    implementation("com.google.cloud.sql:postgres-socket-factory:${Versions.GCP_POSTGRESQL}")
+
+    // Testing
+    testImplementation("org.springframework.boot:spring-boot-starter-test")
+    testImplementation("io.mockk:mockk:${Versions.IO_MOCKK}")
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:${Versions.COROUTINES}")
+    testImplementation("com.ninja-squad:springmockk:${Versions.SPRING_MOCK}")
+    testImplementation("org.jetbrains.kotlin:kotlin-test-junit5")
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+
+    // Development Tools
+    developmentOnly("org.springframework.boot:spring-boot-devtools")
+
+    // Retryable
+    implementation("org.springframework.retry:spring-retry:${Versions.SPRING_RETRY}")
+    implementation("org.springframework.boot:spring-boot-starter-aop")
+}
+
+kotlin {
+    compilerOptions {
+        freeCompilerArgs.addAll("-Xjsr305=strict")
+    }
+}
+
+tasks.withType<Test> {
     useJUnitPlatform()
+}
+
+// Configure noArg plugin for JPA entities
+allOpen {
+    annotation("jakarta.persistence.Entity")
+    annotation("jakarta.persistence.MappedSuperclass")
+    annotation("jakarta.persistence.Embeddable")
+}
+
+// Configuration for running the application
+tasks.bootRun {
+    jvmArgs = listOf("-Xms256m", "-Xmx1g")
+}
+
+ktlint {
+    version.set("1.5.0")
 }
