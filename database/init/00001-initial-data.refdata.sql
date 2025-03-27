@@ -1,0 +1,41 @@
+SET search_path TO news, public;
+
+INSERT INTO sources (id, name, url, parsing_strategy)
+VALUES
+    -- RSS
+    ('373bbadb-89a0-496f-9929-e918513015da', 'Antara News Terkini', 'https://www.antaranews.com/rss/terkini.xml', 'ANTARA'),
+    ('afd798b7-50ff-482e-b8ac-32caf3bd80ef', 'Antara Top News', 'https://www.antaranews.com/rss/top-news.xml', 'ANTARA'),
+    ('eded31d1-df83-490c-bf9b-020e17c46b8d', 'Antara Politik', 'https://www.antaranews.com/rss/politik.xml', 'ANTARA'),
+    ('6f73f7c8-4f82-4334-9a40-4fce016b40a1', 'Antara Hukum', 'https://www.antaranews.com/rss/hukum.xml', 'ANTARA'),
+    ('ef5eba1d-efe2-4fa2-bbfa-26dcaca75e1f', 'Antara Ekonomi', 'https://www.antaranews.com/rss/ekonomi.xml', 'ANTARA'),
+    ('ac653595-d368-4fea-8538-2bd758880dea', 'Antara Metro', 'https://www.antaranews.com/rss/metro.xml', 'ANTARA'),
+    ('2ec3e8dd-8b4e-4c66-bffc-0ed72a1019d4', 'Antara Sepakbola', 'https://www.antaranews.com/rss/sepakbola.xml', 'ANTARA'),
+    ('490886f2-cb4d-4c2d-b204-0c896ef9aaf0', 'Antara Olahraga', 'https://www.antaranews.com/rss/olahraga.xml', 'ANTARA'),
+    ('3e67253c-94d7-4b98-8aeb-b0db9fdfa64b', 'Antara Humaniora', 'https://www.antaranews.com/rss/humaniora.xml', 'ANTARA'),
+    ('c957b94f-965f-4914-ad52-47c9a86c00a2', 'Antara Lifestyle', 'https://www.antaranews.com/rss/lifestyle.xml', 'ANTARA'),
+    ('65cd64d8-f7dc-469e-8b7c-7e1754d85cc6', 'Antara Hiburan', 'https://www.antaranews.com/rss/hiburan.xml', 'ANTARA'),
+    ('f383de2e-6a48-497a-9c58-2db40d9f6be6', 'Antara Dunia', 'https://www.antaranews.com/rss/dunia.xml', 'ANTARA'),
+    ('cb6b6966-697e-468b-bdc9-23cbf1bccf57', 'Antara Tekno', 'https://www.antaranews.com/rss/tekno.xml', 'ANTARA'),
+    ('f58fb76b-27a3-42fe-b2aa-921d602d22b2', 'Antara Otomotif', 'https://www.antaranews.com/rss/otomotif.xml', 'ANTARA'),
+    ('bec3777b-b996-430e-b189-e9cb8ae7ab15', 'Antara Warta Bumi', 'https://www.antaranews.com/rss/warta-bumi.xml', 'ANTARA'),
+    ('8e9a4d7d-0311-4d01-a5d3-1e1faa512d6f', 'Antara Rilis Pers', 'https://www.antaranews.com/rss/rilis-pers.xml', 'ANTARA'),
+    ('b78057fc-b958-4f4e-82f8-5fa974b38b46', 'CNBC ID - Market', 'https://www.cnbcindonesia.com/market/rss', 'CNBC'),
+    ('05996f81-8252-427b-8b1a-c5601229b082', 'CNBC ID - News', 'https://www.cnbcindonesia.com/news/rss', 'CNBC'),
+    ('1ff102c7-4102-45ea-8e84-22fdd0deacd6', 'CNBC ID - Entrepreneur', 'https://www.cnbcindonesia.com/entrepreneur/rss', 'CNBC'),
+    ('3120c227-07ee-49ae-97eb-013e3da04b63', 'CNBC ID - Syariah', 'https://www.cnbcindonesia.com/syariah/rss', 'CNBC'),
+    ('e8300745-a0d4-4997-9378-db15e61382cf', 'CNBC ID - Tech', 'https://www.cnbcindonesia.com/tech/rss', 'CNBC'),
+    ('c1728a9b-3dbe-4e72-bf8a-10e975e524f7', 'CNBC ID - Lifestyle', 'https://www.cnbcindonesia.com/lifestyle/rss', 'CNBC'),
+    ('2fbe9319-21e0-41e2-b912-f17d23ec0410', 'CNBC ID - Opini', 'https://www.cnbcindonesia.com/opini/rss', 'CNBC'),
+    ('fbe46e3d-d371-4043-a418-4b6f1e1e1eb0', 'CNBC ID - My Money', 'https://www.cnbcindonesia.com/mymoney/rss', 'CNBC'),
+    ('0f9e7d02-1a57-4f8b-9cbe-4531b89bb7c5', 'CNBC ID - Cuap Cuap Cuan', 'https://www.cnbcindonesia.com/cuap-cuap-cuan/rss', 'CNBC'),
+    ('b259aab9-d77a-4581-bee7-b78d98c04421', 'CNBC ID - Research', 'https://www.cnbcindonesia.com/research/rss', 'CNBC'),
+    ('cba07895-6f80-4be7-a48a-b7bdb55f6111', 'CNN ID', 'https://www.cnnindonesia.com/rss', 'CNN'),
+    ('b2f41e73-1a61-481d-9fa8-81f29ea5a860', 'CNN ID - Nasional', 'https://www.cnnindonesia.com/nasional/rss', 'CNN'),
+    ('17aeb97a-0726-4ca6-9ee5-96ebdd208a39', 'CNN ID - Internasional', 'https://www.cnnindonesia.com/internasional/rss', 'CNN'),
+    ('dd31eef0-5092-4c35-a985-a5e6257ff4d2', 'CNN ID - Ekonomi', 'https://www.cnnindonesia.com/ekonomi/rss', 'CNN'),
+    ('dea3c252-f24a-4ab8-8106-300b137687f8', 'CNN ID - Olahraga', 'https://www.cnnindonesia.com/olahraga/rss', 'CNN'),
+    ('194f8df4-8b45-4662-b706-21a41a26de7a', 'CNN ID - Teknologi', 'https://www.cnnindonesia.com/teknologi/rss', 'CNN'),
+    ('3bb97fe0-33f9-45e8-bdc6-5079e8b12f13', 'CNN ID - Hiburan', 'https://www.cnnindonesia.com/hiburan/rss', 'CNN'),
+    ('a2248666-ca75-4cae-8d26-b7ac8e89500d', 'CNN ID - Gaya Hidup', 'https://www.cnnindonesia.com/gaya-hidup/rss', 'CNN'),
+    ('3dffa5a6-6aad-4a1c-8362-68e12220b646', 'JPNN', 'https://www.jpnn.com/index.php?mib=rss', 'JPNN')
+ON CONFLICT (id) DO NOTHING;

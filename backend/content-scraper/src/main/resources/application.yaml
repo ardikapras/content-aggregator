@@ -1,10 +1,47 @@
-ktor:
-  development: true
-  deployment:
-    port: 8082
-    watch:
-      - classes
-      - resources
+spring:
   application:
-    modules:
-      - com.ardikapras.ApplicationKt.module
+    name: content-scraper
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/newsdb
+    username: postgres
+    password: postgres
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    properties:
+      hibernate:
+        format_sql: true
+    show-sql: false
+    hibernate:
+      ddl-auto: validate
+  datasource.hikari:
+    connection-timeout: 20000
+    maximum-pool-size: 10
+    minimum-idle: 5
+  lifecycle:
+    timeout-per-shutdown-phase: 30s
+logging:
+  level:
+    root: debug
+  file:
+    name: logs/news-scraper.log
+server:
+  port: 8080
+  servlet:
+    context-path: /
+  compression:
+    enabled: true
+    mime-types: application/json,application/xml,text/html,text/xml,text/plain
+  shutdown: graceful
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+  endpoint:
+    health:
+      show-details: always
+  prometheus:
+    metrics:
+      export:
+        enabled: true
