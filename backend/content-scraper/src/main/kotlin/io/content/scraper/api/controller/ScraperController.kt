@@ -1,7 +1,6 @@
 package io.content.scraper.api.controller
 
 import io.content.scraper.api.dto.ApiResponse
-import io.content.scraper.repository.SourceRepository
 import io.content.scraper.service.CollectorService
 import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.coroutines.runBlocking
@@ -19,7 +18,6 @@ import org.springframework.web.bind.annotation.RestController
 @RestController
 @RequestMapping("/api/scraper")
 class ScraperController(
-    private val sourceRepository: SourceRepository,
     private val collectorService: CollectorService,
 ) {
     private val logger = KotlinLogging.logger {}
@@ -28,11 +26,12 @@ class ScraperController(
      * Trigger scraping for all active news sources
      */
     @PostMapping("/run")
-    fun triggerScraping(): ResponseEntity<ApiResponse<String>> =
+    fun triggerScraping(): ResponseEntity<ApiResponse<Map<String, Int>>> =
         runBlocking {
             try {
-                collectorService.start()
+                val results = collectorService.start()
                 return@runBlocking ApiResponse.success(
+                    results,
                     "Scraping completed successfully",
                 )
             } catch (e: Exception) {
@@ -41,4 +40,18 @@ class ScraperController(
                 return@runBlocking ApiResponse.error("Failed to complete scraping: ${e.message}")
             }
         }
+
+    @PostMapping("/re-run")
+    fun retryPendingArticlesToKafka(): ResponseEntity<ApiResponse<Map<String, Int>>> {
+        try {
+            val results = collectorService.retryPendingArticles()
+            return ApiResponse.success(
+                results,
+                "Successfully pushed pending articles to Kafka",
+            )
+        } catch (e: Exception) {
+            logger.error { "Error pushing pending articles: ${e.message}" }
+            return ApiResponse.error("Failed to push pending articles: ${e.message}")
+        }
+    }
 }

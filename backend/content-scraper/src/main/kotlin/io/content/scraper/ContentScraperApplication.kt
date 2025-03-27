@@ -6,8 +6,8 @@ import org.springframework.retry.annotation.EnableRetry
 
 @SpringBootApplication
 @EnableRetry
-class NewsScraperApplication
+class ContentScraperApplication
 
 fun main(args: Array<String>) {
-    runApplication<NewsScraperApplication>(*args)
+    runApplication<ContentScraperApplication>(*args)
 }

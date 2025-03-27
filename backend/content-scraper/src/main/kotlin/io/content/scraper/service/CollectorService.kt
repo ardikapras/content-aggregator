@@ -12,14 +12,14 @@ import io.content.scraper.models.Source
 import io.content.scraper.repository.ArticleRepository
 import io.content.scraper.repository.SourceRepository
 import io.github.oshai.kotlinlogging.KotlinLogging
+import io.news.scraper.core.enum.ArticleStatus
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.withContext
-import org.apache.kafka.clients.producer.KafkaProducer
-import org.apache.kafka.clients.producer.ProducerRecord
+import org.springframework.beans.factory.annotation.Value
+import org.springframework.kafka.core.KafkaTemplate
 import org.springframework.stereotype.Service
-import java.net.URL
+import java.net.URI
 import java.time.ZoneId
-import java.util.Properties
 
 @Service
 class CollectorService(
@@ -27,25 +27,31 @@ class CollectorService(
     private val articleRepository: ArticleRepository,
     private val applicationScope: CoroutineScope,
     private val objectMapper: ObjectMapper,
-    producerProperties: Properties,
+    private val kafkaTemplate: KafkaTemplate<String, String>,
+    @Value("\${app.max-retry-count:3}") private val maxRetryCount: Int,
 ) {
     private val logger = KotlinLogging.logger {}
-    private val producer = KafkaProducer<String, String>(producerProperties)
 
-    suspend fun start() {
+    suspend fun start(): Map<String, Int> =
         withContext(applicationScope.coroutineContext) {
             logger.debug { "Starting scraping job" }
 
+            val articleCountsBySource = mutableMapOf<String, Int>()
+
             sourceRepository.findByIsActiveTrue().forEach { source ->
+                articleCountsBySource[source.name] = 0
+
                 source.fetchFeed()?.let { feed ->
-                    processFeed(source, feed)
+                    val count = processFeed(source, feed)
+                    articleCountsBySource[source.name] = count
                 }
             }
+
+            articleCountsBySource
         }
-    }
 
     private fun Source.fetchFeed(): SyndFeed? {
-        val feedUrl = URL(this.url)
+        val feedUrl = URI.create(this.url).toURL()
         val connection = feedUrl.openConnection()
         connection.connect()
 
@@ -58,39 +64,54 @@ class CollectorService(
     private fun processFeed(
         source: Source,
         feed: SyndFeed,
-    ) {
+    ): Int {
         logger.info { "process feed: ${source.url}" }
-
+        var articleCount = 0
         feed.entries.forEach { entry ->
-            processEntry(source, entry, feed.link)
+            if (processEntry(source, entry, feed.link)) {
+                articleCount++
+            }
         }
+
+        return articleCount
     }
 
     private fun processEntry(
         source: Source,
         entry: SyndEntry,
         baseUrl: String,
-    ) {
-        logger.info { "process entry: ${entry.title}" }
-        val newsSourceId = source.id
+    ): Boolean {
+        logger.debug { "Processing entry: ${entry.title}" }
         val entryLink = getAbsoluteLink(entry.link, baseUrl)
+
+        val existingArticle = articleRepository.findByUrl(entryLink)
+        if (existingArticle != null) {
+            logger.debug { "Article already exists: ${existingArticle.id}" }
+            return false
+        }
+
         val article =
-            articleRepository.saveAndFlush(
-                Article(
-                    title = entry.title,
-                    description = entry.description.value,
-                    url = entryLink,
-                    publishDate =
-                        entry.publishedDate
-                            .toInstant()
-                            .atZone(ZoneId.of("Asia/Jakarta"))
-                            .toLocalDateTime(),
-                    source = source,
-                ),
+            Article(
+                title = entry.title,
+                description = entry.description?.value ?: "",
+                url = entryLink,
+                publishDate =
+                    entry.publishedDate
+                        ?.toInstant()
+                        ?.atZone(ZoneId.of("Asia/Jakarta"))
+                        ?.toLocalDateTime(),
+                source = source,
             )
-        val articleDto = ArticleDto(article.id, entryLink, source.parsingStrategy)
-        val record = ProducerRecord(CONTENT_TO_SCRAPE, newsSourceId.toString(), objectMapper.writeValueAsString(articleDto))
-        producer.send(record)
+
+        val savedArticle = articleRepository.saveAndFlush(article)
+        val articleDto = ArticleDto(savedArticle.id, entryLink, source.parsingStrategy)
+        kafkaTemplate.send(
+            CONTENT_TO_SCRAPE,
+            savedArticle.id.toString(),
+            objectMapper.writeValueAsString(articleDto),
+        )
+
+        return true
     }
 
     private fun getAbsoluteLink(
@@ -102,4 +123,34 @@ class CollectorService(
         } else {
             baseUrl + link
         }
+
+    /**
+     * Push articles with DISCOVERED status and less than max retry count to Kafka
+     * Returns a map of source names to article counts
+     */
+    fun retryPendingArticles(): Map<String, Int> {
+        val pendingArticles =
+            articleRepository.findByStatusAndRetryCountLessThan(
+                ArticleStatus.DISCOVERED.name,
+                maxRetryCount,
+            )
+
+        val countBySource = mutableMapOf<String, Int>()
+
+        pendingArticles.forEach { article ->
+            val sourceName = article.source.name
+            countBySource[sourceName] = countBySource.getOrDefault(sourceName, 0) + 1
+
+            val articleDto = ArticleDto(article.id, article.url, article.source.parsingStrategy)
+            kafkaTemplate.send(
+                CONTENT_TO_SCRAPE,
+                article.id.toString(),
+                objectMapper.writeValueAsString(articleDto),
+            )
+
+            logger.debug { "Pushed article ${article.id} to Kafka" }
+        }
+
+        return countBySource
+    }
 }
