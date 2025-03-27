@@ -9,7 +9,6 @@ import io.content.scraper.strategy.NewsStrategyManager.parseStrategyMap
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.news.scraper.core.enum.ArticleStatus
 import org.jsoup.Jsoup
-import org.springframework.beans.factory.annotation.Value
 import org.springframework.kafka.annotation.KafkaListener
 import org.springframework.stereotype.Service
 import java.time.LocalDateTime
@@ -18,7 +17,6 @@ import java.time.LocalDateTime
 class ScraperService(
     private val articleRepository: ArticleRepository,
     private val objectMapper: ObjectMapper,
-    @Value("\${app.max-retry-count:3}") private val maxRetryCount: Int,
 ) {
     private val logger = KotlinLogging.logger {}
 
@@ -37,7 +35,6 @@ class ScraperService(
         articleRepository
             .findById(articleDto.id)
             .orElse(null)
-            ?.takeIf { it.retryCount < maxRetryCount }
             ?.let {
                 try {
                     val newsDocument = Jsoup.connect(it.url).get()

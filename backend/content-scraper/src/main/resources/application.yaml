@@ -23,7 +23,7 @@ spring:
 logging:
   level:
     root: info
-    io.content: debug
+    io.content: info
   file:
     name: logs/news-scraper.log
 server:

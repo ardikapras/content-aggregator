@@ -8,4 +8,9 @@ import java.util.UUID
 @Repository
 interface ArticleRepository : JpaRepository<Article, UUID> {
     fun findByUrl(url: String): Article?
+
+    fun findByStatusAndRetryCountLessThan(
+        status: String,
+        maxRetryCount: Int,
+    ): List<Article>
 }

@@ -12,8 +12,10 @@ import io.content.scraper.models.Source
 import io.content.scraper.repository.ArticleRepository
 import io.content.scraper.repository.SourceRepository
 import io.github.oshai.kotlinlogging.KotlinLogging
+import io.news.scraper.core.enum.ArticleStatus
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.withContext
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.kafka.core.KafkaTemplate
 import org.springframework.stereotype.Service
 import java.net.URI
@@ -26,6 +28,7 @@ class CollectorService(
     private val applicationScope: CoroutineScope,
     private val objectMapper: ObjectMapper,
     private val kafkaTemplate: KafkaTemplate<String, String>,
+    @Value("\${app.max-retry-count:3}") private val maxRetryCount: Int,
 ) {
     private val logger = KotlinLogging.logger {}
 
@@ -120,4 +123,34 @@ class CollectorService(
         } else {
             baseUrl + link
         }
+
+    /**
+     * Push articles with DISCOVERED status and less than max retry count to Kafka
+     * Returns a map of source names to article counts
+     */
+    fun retryPendingArticles(): Map<String, Int> {
+        val pendingArticles =
+            articleRepository.findByStatusAndRetryCountLessThan(
+                ArticleStatus.DISCOVERED.name,
+                maxRetryCount,
+            )
+
+        val countBySource = mutableMapOf<String, Int>()
+
+        pendingArticles.forEach { article ->
+            val sourceName = article.source.name
+            countBySource[sourceName] = countBySource.getOrDefault(sourceName, 0) + 1
+
+            val articleDto = ArticleDto(article.id, article.url, article.source.parsingStrategy)
+            kafkaTemplate.send(
+                CONTENT_TO_SCRAPE,
+                article.id.toString(),
+                objectMapper.writeValueAsString(articleDto),
+            )
+
+            logger.debug { "Pushed article ${article.id} to Kafka" }
+        }
+
+        return countBySource
+    }
 }
