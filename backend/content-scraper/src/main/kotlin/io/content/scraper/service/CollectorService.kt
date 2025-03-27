@@ -4,7 +4,6 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.rometools.rome.feed.synd.SyndEntry
 import com.rometools.rome.feed.synd.SyndFeed
 import com.rometools.rome.io.SyndFeedInput
-import com.rometools.rome.io.XmlReader
 import io.content.scraper.constant.KafkaTopics.CONTENT_TO_SCRAPE
 import io.content.scraper.dto.ArticleDto
 import io.content.scraper.models.Article
@@ -18,7 +17,9 @@ import kotlinx.coroutines.withContext
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.kafka.core.KafkaTemplate
 import org.springframework.stereotype.Service
-import java.net.URI
+import org.springframework.web.reactive.function.client.WebClient
+import java.io.StringReader
+import java.time.Duration
 import java.time.ZoneId
 
 @Service
@@ -28,6 +29,7 @@ class CollectorService(
     private val applicationScope: CoroutineScope,
     private val objectMapper: ObjectMapper,
     private val kafkaTemplate: KafkaTemplate<String, String>,
+    private val webClient: WebClient,
     @Value("\${app.max-retry-count:3}") private val maxRetryCount: Int,
 ) {
     private val logger = KotlinLogging.logger {}
@@ -50,16 +52,23 @@ class CollectorService(
             articleCountsBySource
         }
 
-    private fun Source.fetchFeed(): SyndFeed? {
-        val feedUrl = URI.create(this.url).toURL()
-        val connection = feedUrl.openConnection()
-        connection.connect()
+    private fun Source.fetchFeed(): SyndFeed? =
+        try {
+            val response =
+                webClient
+                    .get()
+                    .uri(this.url)
+                    .retrieve()
+                    .bodyToMono(String::class.java)
+                    .timeout(Duration.ofSeconds(15))
+                    .block()
 
-        val inputStream = connection.getInputStream()
-        val feedInput = SyndFeedInput()
-
-        return feedInput.build(XmlReader(inputStream))
-    }
+            val feedInput = SyndFeedInput()
+            feedInput.build(response?.let { StringReader(it) })
+        } catch (e: Exception) {
+            logger.error { "Error fetching feed from ${this.url}: ${e.message}" }
+            null
+        }
 
     private fun processFeed(
         source: Source,
