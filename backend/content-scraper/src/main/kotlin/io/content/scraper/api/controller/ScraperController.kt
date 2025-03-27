@@ -28,11 +28,12 @@ class ScraperController(
      * Trigger scraping for all active news sources
      */
     @PostMapping("/run")
-    fun triggerScraping(): ResponseEntity<ApiResponse<String>> =
+    fun triggerScraping(): ResponseEntity<ApiResponse<Map<String, Int>>> =
         runBlocking {
             try {
-                collectorService.start()
+                val results = collectorService.start()
                 return@runBlocking ApiResponse.success(
+                    results,
                     "Scraping completed successfully",
                 )
             } catch (e: Exception) {
