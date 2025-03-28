@@ -2,10 +2,10 @@ package io.content.scraper.service
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import io.content.scraper.constant.KafkaTopics
-import io.content.scraper.dto.ArticleDto
 import io.content.scraper.models.Article
+import io.content.scraper.models.KafkaMessage
 import io.content.scraper.repository.ArticleRepository
-import io.content.scraper.strategy.NewsStrategyManager.parseStrategyMap
+import io.content.scraper.strategy.util.NewsStrategyManager
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.news.scraper.core.enum.ArticleStatus
 import org.jsoup.Jsoup
@@ -24,26 +24,21 @@ class ScraperService(
     fun consumeArticle(message: String) {
         logger.debug { "Consuming message: $message" }
         try {
-            val articleDto = objectMapper.readValue(message, ArticleDto::class.java)
-            processArticle(articleDto)
+            val kafkaMessage = objectMapper.readValue(message, KafkaMessage::class.java)
+            processArticle(kafkaMessage)
         } catch (e: Exception) {
             logger.error(e) { "Error processing message: ${e.message}" }
         }
     }
 
-    private fun processArticle(articleDto: ArticleDto) {
+    private fun processArticle(kafkaMessage: KafkaMessage) {
         articleRepository
-            .findById(articleDto.id)
+            .findById(kafkaMessage.id)
             .orElse(null)
             ?.let {
                 try {
                     val newsDocument = Jsoup.connect(it.url).get()
-                    val strategy = parseStrategyMap[articleDto.parsingStrategy]
-
-                    if (strategy == null) {
-                        updateArticleWithError(it, "No strategy found for: ${articleDto.parsingStrategy}")
-                        return
-                    }
+                    val strategy = NewsStrategyManager.getStrategy(kafkaMessage.parsingStrategy)
 
                     val parsedNews = strategy.parse(newsDocument)
 
