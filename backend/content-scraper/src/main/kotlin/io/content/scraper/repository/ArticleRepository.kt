@@ -1,6 +1,8 @@
 package io.content.scraper.repository
 
 import io.content.scraper.models.Article
+import org.springframework.data.domain.Page
+import org.springframework.data.domain.Pageable
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.stereotype.Repository
 import java.util.UUID
@@ -13,4 +15,9 @@ interface ArticleRepository : JpaRepository<Article, UUID> {
         status: String,
         maxRetryCount: Int,
     ): List<Article>
+
+    fun findBySourceId(
+        sourceId: UUID,
+        pageable: Pageable,
+    ): Page<Article>
 }

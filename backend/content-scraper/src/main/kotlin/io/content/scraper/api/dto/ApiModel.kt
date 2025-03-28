@@ -110,6 +110,7 @@ data class SourceDto(
     val url: String,
     val lastScraped: String?,
     val isActive: Boolean,
+    val parsingStrategy: String? = null,
 ) {
     companion object {
         fun fromEntity(source: Source): SourceDto =
@@ -119,6 +120,7 @@ data class SourceDto(
                 url = source.url,
                 lastScraped = source.lastScraped?.toString() ?: "Never",
                 isActive = source.isActive,
+                parsingStrategy = source.parsingStrategy,
             )
     }
 }

@@ -1,7 +1,10 @@
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
-import ArticleList from './components/ArticleList';
 import { useState } from 'react';
-import apiService from './services/Api.ts';
+import { Container, Navbar, Nav, Button, Alert, Spinner } from 'react-bootstrap';
+import ArticleList from './components/ArticleList';
+import SourceList from './components/SourceList';
+import apiService from './services/Api';
+import 'bootstrap/dist/css/bootstrap.min.css';
 
 function App() {
     const [scraperStatus, setScraperStatus] = useState<{
@@ -34,55 +37,57 @@ function App() {
 
     return (
         <Router>
-            <div className="min-h-screen bg-gray-50">
-                <nav className="bg-white shadow">
-                    <div className="container mx-auto px-4">
-                        <div className="flex justify-between h-16">
-                            <div className="flex items-center">
-                                <Link to="/" className="text-lg font-semibold text-gray-800">
-                                    Content Aggregator
-                                </Link>
-
-                                <div className="ml-10 flex items-center space-x-4">
-                                    <Link to="/" className="text-gray-600 hover:text-gray-900">
-                                        Articles
-                                    </Link>
-                                    <Link to="/sources" className="text-gray-600 hover:text-gray-900">
-                                        Sources
-                                    </Link>
-                                </div>
-                            </div>
-
-                            <div className="flex items-center">
-                                <button
-                                    onClick={handleTriggerScraper}
-                                    disabled={scraperStatus.loading}
-                                    className="bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded disabled:opacity-50"
-                                >
-                                    {scraperStatus.loading ? 'Running Scraper...' : 'Run Scraper'}
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </nav>
+            <div className="d-flex flex-column min-vh-100">
+                <Navbar bg="dark" variant="dark" expand="lg">
+                    <Container>
+                        <Navbar.Brand as={Link} to="/">Content Aggregator</Navbar.Brand>
+                        <Navbar.Toggle aria-controls="basic-navbar-nav" />
+                        <Navbar.Collapse id="basic-navbar-nav">
+                            <Nav className="me-auto">
+                                <Nav.Link as={Link} to="/">Articles</Nav.Link>
+                                <Nav.Link as={Link} to="/sources">Sources</Nav.Link>
+                            </Nav>
+                            <Button
+                                variant="primary"
+                                onClick={handleTriggerScraper}
+                                disabled={scraperStatus.loading}
+                            >
+                                {scraperStatus.loading ? (
+                                    <>
+                                        <Spinner
+                                            as="span"
+                                            animation="border"
+                                            size="sm"
+                                            role="status"
+                                            aria-hidden="true"
+                                        />
+                                        <span className="ms-2">Running Scraper...</span>
+                                    </>
+                                ) : 'Run Scraper'}
+                            </Button>
+                        </Navbar.Collapse>
+                    </Container>
+                </Navbar>
 
                 {scraperStatus.message && (
-                    <div className="bg-blue-50 border-l-4 border-blue-500 p-4 my-4 mx-auto max-w-7xl">
-                        <p className="text-blue-700">{scraperStatus.message}</p>
-                    </div>
+                    <Container className="mt-3">
+                        <Alert variant="info">
+                            {scraperStatus.message}
+                        </Alert>
+                    </Container>
                 )}
 
-                <main className="container mx-auto px-4 py-8">
+                <Container className="py-4 flex-grow-1">
                     <Routes>
                         <Route path="/" element={<ArticleList />} />
-                        <Route path="/sources" element={<div>Sources list will go here</div>} />
+                        <Route path="/sources" element={<SourceList />} />
                     </Routes>
-                </main>
+                </Container>
 
-                <footer className="bg-white border-t mt-auto py-4">
-                    <div className="container mx-auto px-4 text-center text-gray-500">
-                        Content Aggregator © {new Date().getFullYear()}
-                    </div>
+                <footer className="py-3 bg-dark text-white mt-auto">
+                    <Container className="text-center">
+                        <p className="mb-0">Content Aggregator © {new Date().getFullYear()}</p>
+                    </Container>
                 </footer>
             </div>
         </Router>
