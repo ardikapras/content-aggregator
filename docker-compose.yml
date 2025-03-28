@@ -22,6 +22,7 @@ services:
       - backend
 
   kafka:
+    container_name: content-aggregator-kafka
     image: bitnami/kafka:latest
     ports:
       - "9092:9092"
@@ -31,7 +32,7 @@ services:
       KAFKA_CFG_PROCESS_ROLES: broker,controller
       KAFKA_CFG_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
       KAFKA_CFG_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093
-      KAFKA_CFG_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_CFG_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
       KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
       KAFKA_CFG_CONTROLLER_LISTENER_NAMES: CONTROLLER
       ALLOW_PLAINTEXT_LISTENER: yes
@@ -39,24 +40,6 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - kafka_data:/bitnami/kafka
-    networks:
-      - backend
-
-  content-scraper:
-    build:
-      context: .
-      dockerfile: backend/content-scraper/Dockerfile
-    container_name: content-scraper
-    restart: unless-stopped
-    environment:
-      SPRING_PROFILES_ACTIVE: docker
-    ports:
-      - "8080:8080"
-    depends_on:
-      postgres:
-        condition: service_healthy
-      kafka:
-        condition: service_started
     networks:
       - backend
 

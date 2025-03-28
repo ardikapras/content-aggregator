@@ -14,3 +14,116 @@ buildscript {
         classpath "com.moowork.gradle:gradle-node-plugin:1.3.1"
     }
 }
+
+// Task to start Docker services with optional build flag
+tasks.register("dockerComposeUp") {
+    group = "application"
+    description = "Starts all Docker containers defined in docker-compose.yml"
+
+    doLast {
+        // Check if build flag is passed
+        def shouldBuild = project.hasProperty('build')
+
+        def dockerArgs = ["up", "-d"]
+        if (shouldBuild) {
+            dockerArgs.add("--build")
+        }
+
+        exec {
+            workingDir = rootDir
+            executable = "docker-compose"
+            args = dockerArgs
+        }
+        println("Docker services started" + (shouldBuild ? " after building" : ""))
+    }
+}
+
+// Task to stop Docker services
+tasks.register("dockerComposeDown") {
+    group = "application"
+    description = "Stops all Docker containers defined in docker-compose.yml"
+
+    doLast {
+        exec {
+            workingDir = rootDir
+            executable = "docker-compose"
+            args = ["down"]
+        }
+        println("Docker services stopped")
+    }
+}
+
+// Task to run backend with dependencies and health checks
+tasks.register("runBackend") {
+    group = "application"
+    description = "Starts Docker services, waits for them to be healthy, then runs the backend application"
+
+    // Start Docker services
+    dependsOn("dockerComposeUp")
+
+    doLast {
+        // Check if Postgres is ready
+        println("Waiting for PostgreSQL to be ready...")
+        def postgresReady = false
+        def maxRetries = 30
+        def retryCount = 0
+
+        while (!postgresReady && retryCount < maxRetries) {
+            try {
+                def result = exec {
+                    executable = "docker"
+                    args = ["exec", "content-aggregator-db", "pg_isready", "-U", "postgres"]
+                    ignoreExitValue = true
+                }
+                postgresReady = (result.exitValue == 0)
+            } catch (Exception e) {
+                // Ignore exceptions while container is starting
+            }
+
+            if (!postgresReady) {
+                println("PostgreSQL not ready yet, waiting 2 seconds...")
+                sleep(2000)
+                retryCount++
+            }
+        }
+
+        if (!postgresReady) {
+            throw new GradleException("PostgreSQL failed to start after ${maxRetries * 2} seconds")
+        }
+
+        println("PostgreSQL is ready!")
+
+        // Check if Kafka is ready
+        println("Waiting for Kafka to be ready...")
+        def kafkaReady = false
+        retryCount = 0
+
+        while (!kafkaReady && retryCount < maxRetries) {
+            try {
+                def result = exec {
+                    executable = "docker"
+                    args = ["exec", "content-aggregator-kafka", "bash", "-c", "kafka-topics.sh --bootstrap-server localhost:9092 --list"]
+                    ignoreExitValue = true
+                }
+                kafkaReady = (result.exitValue == 0)
+            } catch (Exception e) {
+                // Ignore exceptions while container is starting
+            }
+
+            if (!kafkaReady) {
+                println("Kafka not ready yet, waiting 2 seconds...")
+                sleep(2000)
+                retryCount++
+            }
+        }
+
+        if (!kafkaReady) {
+            throw new GradleException("Kafka failed to start after ${maxRetries * 2} seconds")
+        }
+
+        println("Kafka is ready!")
+        println("All services are ready. Starting Spring Boot application...")
+    }
+
+    finalizedBy(":backend:content-scraper:bootRun")
+}
