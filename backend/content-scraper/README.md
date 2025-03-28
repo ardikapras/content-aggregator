@@ -1,89 +1,149 @@
-# Content Aggregator
+# Content Scraper Service
 
-Build to aggregate news from different sources and consolidate into apps.
+The content scraper is a Spring Boot application that collects, extracts, and processes news articles from various sources using RSS feeds.
 
-## Build status
+## Features
 
-[![CircleCI](https://dl.circleci.com/status-badge/img/gh/sample-user/sample-project/tree/master.svg?style=svg&circle-token=sample-token)](https://dl.circleci.com/status-badge/redirect/gh/sample-user/sample-project/tree/master)
+- **Automated Content Collection**: Periodically fetches articles from RSS feeds
+- **Content Extraction**: Extracts and cleans article content using source-specific parsing strategies
+- **Distributed Processing**: Uses Kafka for message-based article processing
+- **Flexible Architecture**: Easily extensible with new content sources and parsing strategies
+- **REST API**: Provides a comprehensive API for managing sources and triggering operations
 
-## Sonar quality gate status
-[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=sample-project&metric=alert_status&token=sample-token)](https://sonarcloud.io/summary/new_code?id=sample-project)
+## Technology Stack
 
-## Quick Start
+- **Core**: Spring Boot 3.4.3, Kotlin 2.1.10
+- **Database**: PostgreSQL with JPA/Hibernate
+- **Message Broker**: Kafka
+- **Web Scraping**: JSoup
+- **Concurrency**: Kotlin Coroutines
+- **Testing**: JUnit 5, MockK
 
-### Requirements
-- Docker and Docker Compose
+## Architecture
 
-### Running with Docker Compose
+The service follows a modular architecture with key components:
 
-The easiest way to get started is using Docker Compose:
+### Source Management
 
-```bash
-# Clone the repository
-git clone https://github.com/your-org/content-aggregator.git
-cd content-aggregator
+Configurable news sources with different parsing strategies:
+- `Source` - Entity containing RSS feed URL and metadata
+- `SourceRepository` - Data access layer for sources
+- `SourceController` - REST endpoints for source management
 
-# Start all services
-docker compose up -d
+### Content Collection
+
+Components dedicated to fetching and processing RSS feeds:
+- `CollectorService` - Fetches RSS feeds and extracts new articles
+- `ScraperController` - REST endpoints to trigger collection
+
+### Content Extraction
+
+Content extraction with strategy pattern implementation:
+- `NewsParsingStrategy` - Interface for content extraction strategies
+- `BaseNewsParsingStrategy` - Common parsing functionality
+- `Source-specific strategies` - Custom parsing for different news outlets
+- `NewsStrategyManager` - Factory to get appropriate parsing strategy
+
+### Processing Flow
+
+1. `CollectorService` fetches new articles from RSS feeds
+2. New articles are saved to database and sent to Kafka
+3. `ScraperService` consumes from Kafka and extracts full content
+4. Article status is updated throughout the process
+
+## Setup and Running
+
+### Prerequisites
+
+- JDK 21+
+- PostgreSQL 14+
+- Kafka 3.5+
+- Gradle 8+
+
+### Configuration
+
+The application uses Spring configuration. Key properties in `application.yaml`:
+
+```yaml
+spring:
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/newsdb}
+    username: ${SPRING_DATASOURCE_USERNAME:postgres}
+    password: ${SPRING_DATASOURCE_PASSWORD:postgres}
+  kafka:
+    bootstrap-servers: ${SPRING_KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+
+app:
+  max-retry-count: ${APP_MAX_RETRY_COUNT:3}
 ```
 
-The services will be available at:
-- Content Scraper API: http://localhost:8080/api/scraper
-- PostgreSQL: localhost:5432 (credentials: postgres/postgres)
-- Kafka: localhost:9092
+### Running Locally
 
-### API Endpoints
-
-- `POST /api/scraper/run` - Trigger scraping for all active news sources
-- `POST /api/scraper/re-run` - Retry processing pending articles
-
-## Development Setup
-
-### Backend
-
-Main backend gradle project is [backend](./backend), composed of the following subprojects:
-
-- [content-scraper](./backend/content-scraper) - Service to scrape news from different sources.
-
-#### Local Development
-
-For local development without Docker:
-
-1. Create a PostgreSQL database:
-
-```bash
-docker volume create contentdata
-docker compose up -d postgres kafka
-```
-
-2. Run the application:
+Start with Gradle:
 
 ```bash
 ./gradlew backend:content-scraper:run
 ```
 
-### Frontend
+Or package and run the JAR:
 
-- [main-frontend](./frontend/main-app/README.md) - Main frontend web app. Run locally by executing command `./gradlew frontend:main-app:runDev`.
-
-## Project Structure
-
-```
-content-aggregator/
-├── backend/
-│   └── content-scraper/    # News scraping service
-├── frontend/
-│   └── main-app/           # Frontend application
-├── database/
-│   └── init/               # Database initialization scripts
-├── docker-compose.yml      # Docker Compose configuration
-└── README.md               # This file
+```bash
+./gradlew backend:content-scraper:build
+java -jar backend/content-scraper/build/libs/content-scraper-0.0.1-SNAPSHOT.jar
 ```
 
-## Architecture
+### Docker
 
-The system comprises:
-- A content scraper that collects articles from various news sources
-- A PostgreSQL database for storing content
-- A Kafka message broker for handling processing tasks
-- A frontend web application (in development)
+Build and run with Docker:
+
+```bash
+docker build -t content-scraper -f backend/content-scraper/Dockerfile .
+docker run -p 8080:8080 content-scraper
+```
+
+## API Endpoints
+
+### Scraper Operations
+
+- `POST /api/scraper/run` - Trigger content scraping for all active sources
+- `POST /api/scraper/re-run` - Retry processing pending articles
+
+### Source Management
+
+- `GET /api/sources` - Get all configured sources
+- `GET /api/sources/{id}` - Get a specific source
+- `GET /api/sources/active` - Get all active sources
+- `POST /api/sources` - Add a new source
+- `PUT /api/sources/{id}` - Update a source
+- `PUT /api/sources/{id}/toggle-active` - Toggle a source's active status
+
+### Article Access
+
+- `GET /api/articles` - Get articles with pagination and sorting
+- `GET /api/articles/{id}` - Get a specific article
+- `GET /api/articles/source/{sourceId}` - Get articles for a specific source
+
+## Adding a New Source
+
+1. Add the source details to `database/init/00001-initial-data.refdata.sql`
+2. For sources requiring custom parsing:
+    - Add a new value to `ParsingStrategy` enum
+    - Create a new implementation of `BaseNewsParsingStrategy`
+    - Register the strategy in `NewsStrategyManager`
+
+## Development
+
+### Build and Test
+
+```bash
+./gradlew backend:content-scraper:build
+./gradlew backend:content-scraper:test
+```
+
+### Code Style
+
+The project uses ktlint for Kotlin code style checks:
+
+```bash
+./gradlew backend:content-scraper:ktlintCheck
+```
