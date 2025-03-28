@@ -1,6 +1,6 @@
 package io.content.scraper.models
 
-import io.content.scraper.enum.ArticleStatus
+import io.content.scraper.enums.ArticleStatus
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
 import jakarta.persistence.FetchType

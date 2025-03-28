@@ -5,7 +5,7 @@ import com.rometools.rome.feed.synd.SyndEntry
 import com.rometools.rome.feed.synd.SyndFeed
 import com.rometools.rome.io.SyndFeedInput
 import io.content.scraper.constant.KafkaTopics.CONTENT_TO_SCRAPE
-import io.content.scraper.enum.ArticleStatus
+import io.content.scraper.enums.ArticleStatus
 import io.content.scraper.models.Article
 import io.content.scraper.models.KafkaMessage
 import io.content.scraper.models.Source
@@ -113,7 +113,11 @@ class CollectorService(
             )
 
         val savedArticle = articleRepository.saveAndFlush(article)
-        val kafkaMessage = KafkaMessage(savedArticle.id, entryLink, source.parsingStrategy)
+
+        val parserConfig = source.parserConfig
+        val parsingStrategy = parserConfig?.name ?: source.parsingStrategy
+
+        val kafkaMessage = KafkaMessage(savedArticle.id, entryLink, parsingStrategy)
         kafkaTemplate.send(
             CONTENT_TO_SCRAPE,
             savedArticle.id.toString(),
@@ -150,7 +154,10 @@ class CollectorService(
             val sourceName = article.source.name
             countBySource[sourceName] = countBySource.getOrDefault(sourceName, 0) + 1
 
-            val kafkaMessage = KafkaMessage(article.id, article.url, article.source.parsingStrategy)
+            val parserConfig = article.source.parserConfig
+            val parsingStrategy = parserConfig?.name ?: article.source.parsingStrategy
+
+            val kafkaMessage = KafkaMessage(article.id, article.url, parsingStrategy)
             kafkaTemplate.send(
                 CONTENT_TO_SCRAPE,
                 article.id.toString(),

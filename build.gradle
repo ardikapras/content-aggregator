@@ -15,13 +15,11 @@ buildscript {
     }
 }
 
-// Task to start Docker services with optional build flag
 tasks.register("dockerComposeUp") {
     group = "application"
     description = "Starts all Docker containers defined in docker-compose.yml"
 
     doLast {
-        // Check if build flag is passed
         def shouldBuild = project.hasProperty('build')
 
         def dockerArgs = ["up", "-d"]
@@ -38,7 +36,6 @@ tasks.register("dockerComposeUp") {
     }
 }
 
-// Task to stop Docker services
 tasks.register("dockerComposeDown") {
     group = "application"
     description = "Stops all Docker containers defined in docker-compose.yml"
@@ -53,16 +50,13 @@ tasks.register("dockerComposeDown") {
     }
 }
 
-// Task to run backend with dependencies and health checks
 tasks.register("runBackend") {
     group = "application"
     description = "Starts Docker services, waits for them to be healthy, then runs the backend application"
 
-    // Start Docker services
     dependsOn("dockerComposeUp")
 
     doLast {
-        // Check if Postgres is ready
         println("Waiting for PostgreSQL to be ready...")
         def postgresReady = false
         def maxRetries = 30
@@ -76,9 +70,7 @@ tasks.register("runBackend") {
                     ignoreExitValue = true
                 }
                 postgresReady = (result.exitValue == 0)
-            } catch (Exception e) {
-                // Ignore exceptions while container is starting
-            }
+            } catch (Exception ignored) {}
 
             if (!postgresReady) {
                 println("PostgreSQL not ready yet, waiting 2 seconds...")
@@ -93,7 +85,6 @@ tasks.register("runBackend") {
 
         println("PostgreSQL is ready!")
 
-        // Check if Kafka is ready
         println("Waiting for Kafka to be ready...")
         def kafkaReady = false
         retryCount = 0
@@ -106,9 +97,7 @@ tasks.register("runBackend") {
                     ignoreExitValue = true
                 }
                 kafkaReady = (result.exitValue == 0)
-            } catch (Exception e) {
-                // Ignore exceptions while container is starting
-            }
+            } catch (Exception ignored) {}
 
             if (!kafkaReady) {
                 println("Kafka not ready yet, waiting 2 seconds...")
