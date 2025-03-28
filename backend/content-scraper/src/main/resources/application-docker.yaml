@@ -1,0 +1,7 @@
+spring:
+  kafka:
+    bootstrap-servers: kafka:9092
+  datasource:
+    url: jdbc:postgresql://postgres:5432/newsdb
+    username: postgres
+    password: postgres
