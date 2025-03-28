@@ -1,5 +1,6 @@
 package io.content.scraper.api.dto
 
+import com.fasterxml.jackson.annotation.JsonFormat
 import com.fasterxml.jackson.annotation.JsonInclude
 import io.content.scraper.models.Article
 import io.content.scraper.models.Source
@@ -13,10 +14,11 @@ import java.time.LocalDateTime
 @JsonInclude(JsonInclude.Include.NON_NULL)
 data class ApiResponse<T>(
     val success: Boolean,
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSS")
     val timestamp: LocalDateTime = LocalDateTime.now(),
     val data: T? = null,
     val message: String? = null,
-    val error: String? = null,
+    val errorMessage: String? = null,
     val errors: List<ApiError>? = null,
     val status: Int = if (success) HttpStatus.OK.value() else HttpStatus.BAD_REQUEST.value(),
     val path: String? = null,
@@ -50,8 +52,7 @@ data class ApiResponse<T>(
             ResponseEntity.status(httpStatus).body(
                 ApiResponse(
                     success = false,
-                    message = message,
-                    error = message,
+                    errorMessage = message,
                     errors = errors,
                     status = httpStatus.value(),
                 ),
@@ -72,8 +73,7 @@ data class ApiResponse<T>(
             ResponseEntity.badRequest().body(
                 ApiResponse(
                     success = false,
-                    message = message,
-                    error = message,
+                    errorMessage = message,
                     errors = errors,
                     status = HttpStatus.BAD_REQUEST.value(),
                 ),

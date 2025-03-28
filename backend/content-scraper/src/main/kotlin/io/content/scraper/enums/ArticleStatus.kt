@@ -1,4 +1,4 @@
-package io.content.scraper.enum
+package io.content.scraper.enums
 
 enum class ArticleStatus {
     DISCOVERED, // URL found during scraping

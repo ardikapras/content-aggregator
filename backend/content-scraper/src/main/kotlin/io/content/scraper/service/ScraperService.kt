@@ -2,13 +2,13 @@ package io.content.scraper.service
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import io.content.scraper.constant.KafkaTopics
-import io.content.scraper.enum.ArticleStatus
+import io.content.scraper.enums.ArticleStatus
 import io.content.scraper.models.Article
 import io.content.scraper.models.KafkaMessage
+import io.content.scraper.parser.ParserManager
+import io.content.scraper.parser.util.DocumentFactory
 import io.content.scraper.repository.ArticleRepository
-import io.content.scraper.strategy.util.NewsStrategyManager
 import io.github.oshai.kotlinlogging.KotlinLogging
-import org.jsoup.Jsoup
 import org.springframework.kafka.annotation.KafkaListener
 import org.springframework.stereotype.Service
 import java.time.LocalDateTime
@@ -37,20 +37,27 @@ class ScraperService(
             .orElse(null)
             ?.let {
                 try {
-                    val newsDocument = Jsoup.connect(it.url).get()
-                    val strategy = NewsStrategyManager.getStrategy(kafkaMessage.parsingStrategy)
+                    val newsDocument = DocumentFactory.fromUrl(it.url)
 
-                    val parsedNews = strategy.parse(newsDocument)
+                    val parserConfig = it.source.parserConfig
+                    val parser =
+                        if (parserConfig != null) {
+                            ParserManager.getParserById(parserConfig.id)
+                        } else {
+                            ParserManager.getParserByName(kafkaMessage.parsingStrategy)
+                        }
 
-                    if (parsedNews.failure) {
-                        updateArticleWithError(it, parsedNews.failureValue)
+                    val parsedResult = parser.parse(newsDocument)
+
+                    if (parsedResult.failure) {
+                        updateArticleWithError(it, parsedResult.failureValue)
                         return
                     }
 
                     articleRepository.save(
                         it.copy(
-                            author = parsedNews.successValue["author"],
-                            content = parsedNews.successValue["content"],
+                            author = parsedResult.successValue["author"],
+                            content = parsedResult.successValue["content"],
                             status = ArticleStatus.SCRAPED.name,
                         ),
                     )

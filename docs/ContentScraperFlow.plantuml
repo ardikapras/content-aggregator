@@ -1,0 +1,106 @@
+@startuml "Content Scraper Flow"
+
+' Actors
+actor User
+actor "Scheduled Job" as Job
+
+' Components
+box "Frontend" #LightBlue
+  participant "Parser Config UI" as UI
+  participant "API Service" as APIService
+end box
+
+box "Backend" #LightYellow
+  participant "Parser Config Controller" as Controller
+  participant "Parser Config Service" as ConfigService
+  participant "News Strategy Manager" as StrategyManager
+  participant "Configurable Parser Strategy" as ConfigurableStrategy
+  participant "Collector Service" as CollectorService
+  participant "Scraper Service" as ScraperService
+  database "Database" as DB
+end box
+
+' Parser Configuration Flow
+group "Parser Configuration Flow"
+  User -> UI: Open parser configuration page
+  UI -> APIService: Load existing parsers
+  APIService -> Controller: GET /api/parser-configs
+  Controller -> ConfigService: getAllConfigs()
+  ConfigService -> DB: Query parser_configs table
+  DB --> ConfigService: Return config records
+  ConfigService --> Controller: Return config list
+  Controller --> APIService: Return config data
+  APIService --> UI: Display existing parsers
+
+  User -> UI: Create new parser or edit existing
+  User -> UI: Enter test URL and selectors
+  UI -> APIService: Test parser with URL
+  APIService -> Controller: POST /api/parser-configs/test
+  Controller -> ConfigService: testParser(url, config)
+  ConfigService -> ConfigurableStrategy: create(config)
+  ConfigService -> ConfigurableStrategy: parse(document)
+  ConfigurableStrategy --> ConfigService: Return parsing result
+  ConfigService --> Controller: Return test results
+  Controller --> APIService: Return result data
+  APIService --> UI: Display extracted content/author
+
+  User -> UI: Save parser configuration
+  UI -> APIService: Save parser config
+  APIService -> Controller: POST /api/parser-configs
+  Controller -> ConfigService: saveConfig(config)
+  ConfigService -> DB: Save to parser_configs table
+  ConfigService -> StrategyManager: addOrUpdateConfig(config)
+  StrategyManager -> StrategyManager: Update config cache
+  ConfigService --> Controller: Return saved config
+  Controller --> APIService: Return saved config
+  APIService --> UI: Show success message
+end
+
+' Content Scraping Flow
+group "Content Scraping Flow"
+  Job -> CollectorService: Trigger scraping job
+  CollectorService -> DB: Fetch active sources
+  DB --> CollectorService: Return source list
+
+  loop for each source
+    CollectorService -> CollectorService: Fetch RSS feed
+    CollectorService -> DB: Check for existing articles
+    CollectorService -> DB: Save new article entries
+    CollectorService -> ScraperService: Send to Kafka for processing
+  end
+
+  ScraperService -> ScraperService: Consume from Kafka
+  ScraperService -> DB: Fetch article to process
+  ScraperService -> StrategyManager: getStrategy(parserConfig)
+  StrategyManager --> ScraperService: Return configured strategy
+  ScraperService -> ConfigurableStrategy: parse(document)
+
+  alt Multi-page article
+    ConfigurableStrategy -> ConfigurableStrategy: Extract content from first page
+    ConfigurableStrategy -> ConfigurableStrategy: Check for next page link
+    loop while next page exists
+      ConfigurableStrategy -> ConfigurableStrategy: Fetch next page
+      ConfigurableStrategy -> ConfigurableStrategy: Extract content and append
+    end
+  end
+
+  ConfigurableStrategy --> ScraperService: Return parsed content
+  ScraperService -> DB: Update article with content
+end
+
+' User-triggered scraping
+group "Manual Scraping Flow"
+  User -> UI: Click "Run Scraper" button
+  UI -> APIService: Trigger scraping
+  APIService -> Controller: POST /api/scraper/run
+  Controller -> CollectorService: start()
+  note right
+    This follows the same flow
+    as the scheduled job above
+  end note
+  CollectorService --> Controller: Return scraping results
+  Controller --> APIService: Return results
+  APIService --> UI: Show scraping statistics
+end
+
+@enduml
