@@ -7,7 +7,7 @@ plugins {
     id("org.jlleitschuh.gradle.ktlint") version "12.2.0"
 }
 
-group = "io.news"
+group = "io.content-scraper"
 version = "0.0.1-SNAPSHOT"
 
 java {

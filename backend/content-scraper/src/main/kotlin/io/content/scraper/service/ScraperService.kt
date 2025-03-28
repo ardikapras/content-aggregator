@@ -2,12 +2,12 @@ package io.content.scraper.service
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import io.content.scraper.constant.KafkaTopics
+import io.content.scraper.enum.ArticleStatus
 import io.content.scraper.models.Article
 import io.content.scraper.models.KafkaMessage
 import io.content.scraper.repository.ArticleRepository
 import io.content.scraper.strategy.util.NewsStrategyManager
 import io.github.oshai.kotlinlogging.KotlinLogging
-import io.news.scraper.core.enum.ArticleStatus
 import org.jsoup.Jsoup
 import org.springframework.kafka.annotation.KafkaListener
 import org.springframework.stereotype.Service

@@ -5,13 +5,13 @@ import com.rometools.rome.feed.synd.SyndEntry
 import com.rometools.rome.feed.synd.SyndFeed
 import com.rometools.rome.io.SyndFeedInput
 import io.content.scraper.constant.KafkaTopics.CONTENT_TO_SCRAPE
+import io.content.scraper.enum.ArticleStatus
 import io.content.scraper.models.Article
 import io.content.scraper.models.KafkaMessage
 import io.content.scraper.models.Source
 import io.content.scraper.repository.ArticleRepository
 import io.content.scraper.repository.SourceRepository
 import io.github.oshai.kotlinlogging.KotlinLogging
-import io.news.scraper.core.enum.ArticleStatus
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.withContext
 import org.springframework.beans.factory.annotation.Value

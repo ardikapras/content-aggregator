@@ -14,3 +14,42 @@ buildscript {
         classpath "com.moowork.gradle:gradle-node-plugin:1.3.1"
     }
 }
+
+// Task to start Docker services
+tasks.register("dockerComposeUp") {
+    group = "application"
+    description = "Starts all Docker containers defined in docker-compose.yml"
+
+    doLast {
+        exec {
+            workingDir = rootDir
+            executable = "docker-compose"
+            args = ["up", "-d"]
+        }
+        println("Docker services started.")
+    }
+}
+
+// Task to stop Docker services
+tasks.register("dockerComposeDown") {
+    group = "application"
+    description = "Stops all Docker containers defined in docker-compose.yml"
+
+    doLast {
+        exec {
+            workingDir = rootDir
+            executable = "docker-compose"
+            args = ["down"]
+        }
+        println("Docker services stopped")
+    }
+}
+
+// Task to run backend with dependencies
+tasks.register("runBackend") {
+    group = "application"
+    description = "Starts Docker services and runs the backend application"
+
+    dependsOn("dockerComposeUp")
+    finalizedBy(":backend:content-scraper:bootRun")
+}
