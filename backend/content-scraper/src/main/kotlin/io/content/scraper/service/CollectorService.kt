@@ -5,8 +5,8 @@ import com.rometools.rome.feed.synd.SyndEntry
 import com.rometools.rome.feed.synd.SyndFeed
 import com.rometools.rome.io.SyndFeedInput
 import io.content.scraper.constant.KafkaTopics.CONTENT_TO_SCRAPE
-import io.content.scraper.dto.ArticleDto
 import io.content.scraper.models.Article
+import io.content.scraper.models.KafkaMessage
 import io.content.scraper.models.Source
 import io.content.scraper.repository.ArticleRepository
 import io.content.scraper.repository.SourceRepository
@@ -48,7 +48,7 @@ class CollectorService(
                     articleCountsBySource[source.name] = count
                 }
             }
-
+            logger.debug { "Scraping job completed" }
             articleCountsBySource
         }
 
@@ -113,11 +113,11 @@ class CollectorService(
             )
 
         val savedArticle = articleRepository.saveAndFlush(article)
-        val articleDto = ArticleDto(savedArticle.id, entryLink, source.parsingStrategy)
+        val kafkaMessage = KafkaMessage(savedArticle.id, entryLink, source.parsingStrategy)
         kafkaTemplate.send(
             CONTENT_TO_SCRAPE,
             savedArticle.id.toString(),
-            objectMapper.writeValueAsString(articleDto),
+            objectMapper.writeValueAsString(kafkaMessage),
         )
 
         return true
@@ -150,11 +150,11 @@ class CollectorService(
             val sourceName = article.source.name
             countBySource[sourceName] = countBySource.getOrDefault(sourceName, 0) + 1
 
-            val articleDto = ArticleDto(article.id, article.url, article.source.parsingStrategy)
+            val kafkaMessage = KafkaMessage(article.id, article.url, article.source.parsingStrategy)
             kafkaTemplate.send(
                 CONTENT_TO_SCRAPE,
                 article.id.toString(),
-                objectMapper.writeValueAsString(articleDto),
+                objectMapper.writeValueAsString(kafkaMessage),
             )
 
             logger.debug { "Pushed article ${article.id} to Kafka" }
