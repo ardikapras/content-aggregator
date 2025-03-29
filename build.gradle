@@ -116,3 +116,24 @@ tasks.register("runBackend") {
 
     finalizedBy(":backend:content-scraper:bootRun")
 }
+
+tasks.register("lintTs") {
+    group = "verification"
+    description = "Runs eslint on TypeScript code"
+
+    dependsOn(":frontend:main-app:lint")
+}
+
+tasks.register("formatTs") {
+    group = "formatting"
+    description = "Formats TypeScript code using Prettier"
+
+    dependsOn(":frontend:main-app:format")
+}
+
+tasks.register("validateTs") {
+    group = "verification"
+    description = "Validates TypeScript code (formatting, linting, and type checking)"
+
+    dependsOn(":frontend:main-app:validate")
+}
