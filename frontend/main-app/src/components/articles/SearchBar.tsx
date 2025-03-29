@@ -1,4 +1,4 @@
-import { FC } from 'react';
+import { ChangeEvent, FC } from 'react';
 import { InputGroup, Form, Button } from 'react-bootstrap';
 
 interface SearchBarProps {
@@ -8,7 +8,7 @@ interface SearchBarProps {
 }
 
 const SearchBar: FC<SearchBarProps> = ({ searchTerm, onSearchChange, onClear }) => {
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     onSearchChange(e.target.value);
   };
 

@@ -87,6 +87,48 @@ export interface RecentActivityDto {
 
 export type TimeRange = '7D' | '1M' | '3M' | '6M' | '1Y' | 'ALL';
 
+export interface ParserConfigDto {
+  id: string;
+  name: string;
+  description: string;
+  authorSelectors: string[];
+  contentSelectors: string[];
+  nextPageSelector?: string;
+  contentFilters: string[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateParserConfigRequest {
+  name: string;
+  description: string;
+  authorSelectors: string[];
+  contentSelectors: string[];
+  nextPageSelector?: string;
+  contentFilters: string[];
+}
+
+export interface UpdateParserConfigRequest {
+  name?: string;
+  description?: string;
+  authorSelectors?: string[];
+  contentSelectors?: string[];
+  nextPageSelector?: string;
+  contentFilters?: string[];
+}
+
+export interface ParserTestRequest {
+  url: string;
+  config: CreateParserConfigRequest;
+}
+
+export interface ParserTestResponse {
+  author?: string;
+  contentPreview?: string;
+  success: boolean;
+  message?: string;
+}
+
 class ApiService {
   private client: AxiosInstance;
 
@@ -108,10 +150,36 @@ class ApiService {
     page = 0,
     size = 10,
     sortBy = 'publishDate',
-    direction = 'DESC'
+    direction = 'DESC',
+    searchTerm = '',
+    source = '',
+    fromDate = '',
+    toDate = ''
   ): Promise<{ items: ArticleDto[]; total: number }> {
+    const params = new URLSearchParams();
+    params.append('page', page.toString());
+    params.append('size', size.toString());
+    params.append('sortBy', sortBy);
+    params.append('direction', direction);
+
+    if (searchTerm) {
+      params.append('search', searchTerm);
+    }
+
+    if (source) {
+      params.append('source', source);
+    }
+
+    if (fromDate) {
+      params.append('fromDate', fromDate);
+    }
+
+    if (toDate) {
+      params.append('toDate', toDate);
+    }
+
     const response = await this.client.get<ApiResponse<PageResponse<ArticleDto>>>(
-      `/articles?page=${page}&size=${size}&sortBy=${sortBy}&direction=${direction}`
+      `/articles?${params.toString()}`
     );
 
     if (response.data?.data) {
@@ -169,24 +237,28 @@ class ApiService {
 
   // Scraper methods
   async triggerScraping(): Promise<{ [source: string]: number }> {
-    const response = await this.client.post<ApiResponse<{ [source: string]: number }>>('/scraper/run');
+    const response =
+      await this.client.post<ApiResponse<{ [source: string]: number }>>('/scraper/run');
     return response.data?.data || {};
   }
 
   async retryPendingArticles(): Promise<{ [source: string]: number }> {
-    const response = await this.client.post<ApiResponse<{ [source: string]: number }>>('/scraper/re-run');
+    const response =
+      await this.client.post<ApiResponse<{ [source: string]: number }>>('/scraper/re-run');
     return response.data?.data || {};
   }
 
   // Dashboard methods
   async getDashboardStats(): Promise<DashboardStatsDto> {
     const response = await this.client.get<ApiResponse<DashboardStatsDto>>('/dashboard/stats');
-    return this.extractData(response) || {
-      totalArticles: 0,
-      totalActiveSources: 0,
-      articlesLast24Hours: 0,
-      lastScrapeTime: null,
-    };
+    return (
+      this.extractData(response) || {
+        totalArticles: 0,
+        totalActiveSources: 0,
+        articlesLast24Hours: 0,
+        lastScrapeTime: null,
+      }
+    );
   }
 
   async getArticleTrendsByScrapedDate(timeRange: TimeRange = '7D'): Promise<ArticleTrendDto[]> {
@@ -204,7 +276,9 @@ class ApiService {
   }
 
   async getSourceHealth(): Promise<SourceHealthDto[]> {
-    const response = await this.client.get<ApiResponse<SourceHealthDto[]>>('/dashboard/sources/health');
+    const response = await this.client.get<ApiResponse<SourceHealthDto[]>>(
+      '/dashboard/sources/health'
+    );
     return response.data?.data || [];
   }
 
@@ -220,6 +294,55 @@ class ApiService {
       `/dashboard/articles/recent?limit=${limit}`
     );
     return response.data?.data || [];
+  }
+
+  async getParserConfigs(): Promise<ParserConfigDto[]> {
+    const response = await this.client.get<ApiResponse<ParserConfigDto[]>>('/parser-configs');
+    return response.data?.data || [];
+  }
+
+  async getParserConfigById(id: string): Promise<ParserConfigDto> {
+    const response = await this.client.get<ApiResponse<ParserConfigDto>>(`/parser-configs/${id}`);
+    return this.extractData(response);
+  }
+
+  async createParserConfig(config: CreateParserConfigRequest): Promise<ParserConfigDto> {
+    const response = await this.client.post<ApiResponse<ParserConfigDto>>(
+      '/parser-configs',
+      config
+    );
+    return this.extractData(response);
+  }
+
+  async updateParserConfig(
+    id: string,
+    config: UpdateParserConfigRequest
+  ): Promise<ParserConfigDto> {
+    const response = await this.client.put<ApiResponse<ParserConfigDto>>(
+      `/parser-configs/${id}`,
+      config
+    );
+    return this.extractData(response);
+  }
+
+  async deleteParserConfig(id: string): Promise<void> {
+    await this.client.delete<ApiResponse<void>>(`/parser-configs/${id}`);
+  }
+
+  async testParserConfig(request: ParserTestRequest): Promise<ParserTestResponse> {
+    try {
+      const response = await this.client.post<ApiResponse<ParserTestResponse>>(
+        '/parser-configs/test?fullContent=true',
+        request
+      );
+      return this.extractData(response);
+    } catch (error) {
+      console.error('Error testing parser configuration:', error);
+      return {
+        success: false,
+        message: 'Failed to test parser configuration. Server error occurred.',
+      };
+    }
   }
 }
 

@@ -1,5 +1,5 @@
 import { FC } from 'react';
-import { Alert } from 'react-bootstrap';
+import { Alert, Card, Tabs, Tab } from 'react-bootstrap';
 import { ParserTestResponse } from '../../types/parserTypes';
 
 interface ParserTestResultsProps {
@@ -20,12 +20,27 @@ const ParserTestResults: FC<ParserTestResultsProps> = ({ testResult, showResults
       {testResult.success && (
         <>
           <h6>Extracted Author:</h6>
-          <p className="mb-3">{testResult.author || 'None'}</p>
+          <p className="mb-3 p-2 bg-light rounded">{testResult.author || 'None'}</p>
 
           <h6>Content Preview:</h6>
-          <div className="bg-light p-3 rounded" style={{ maxHeight: '200px', overflow: 'auto' }}>
-            {testResult.contentPreview}
-          </div>
+          <Card>
+            <Card.Body style={{ maxHeight: '400px', overflow: 'auto' }}>
+              <Tabs defaultActiveKey="formatted" id="parser-result-tabs">
+                <Tab eventKey="formatted" title="Formatted">
+                  <div className="mt-3">
+                    {testResult.contentPreview
+                      ?.split('\n')
+                      .map((paragraph, i) => <p key={i}>{paragraph}</p>)}
+                  </div>
+                </Tab>
+                <Tab eventKey="raw" title="Raw">
+                  <pre className="mt-3 p-2 bg-light rounded" style={{ whiteSpace: 'pre-wrap' }}>
+                    {testResult.contentPreview}
+                  </pre>
+                </Tab>
+              </Tabs>
+            </Card.Body>
+          </Card>
         </>
       )}
     </Alert>

@@ -4,21 +4,25 @@ import io.content.scraper.api.dto.ApiResponse
 import io.content.scraper.api.dto.ArticleDto
 import io.content.scraper.api.dto.PageResponse
 import io.content.scraper.repository.ArticleRepository
+import io.content.scraper.service.ArticleService
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
+import org.springframework.format.annotation.DateTimeFormat
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
+import java.time.LocalDate
 import java.util.UUID
 
 @RestController
 @RequestMapping("/api/articles")
 class ArticleController(
     private val articleRepository: ArticleRepository,
+    private val articleService: ArticleService,
 ) {
     private val logger = KotlinLogging.logger {}
 
@@ -28,9 +32,16 @@ class ArticleController(
         @RequestParam(defaultValue = "10") size: Int,
         @RequestParam(defaultValue = "publishDate") sortBy: String,
         @RequestParam(defaultValue = "DESC") direction: String,
+        @RequestParam(required = false) search: String?,
+        @RequestParam(required = false) source: String?,
+        @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) fromDate: LocalDate?,
+        @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) toDate: LocalDate?,
     ): ResponseEntity<ApiResponse<PageResponse<ArticleDto>>> {
         try {
-            logger.info { "Fetching articles with page=$page, size=$size, sortBy=$sortBy, direction=$direction" }
+            logger.info {
+                "Fetching articles with page=$page, size=$size, sortBy=$sortBy, direction=$direction, " +
+                    "search=$search, source=$source, fromDate=$fromDate, toDate=$toDate"
+            }
 
             val sortDirection =
                 if (direction.equals("ASC", ignoreCase = true)) {
@@ -46,7 +57,7 @@ class ArticleController(
                     Sort.by(sortDirection, sortBy),
                 )
 
-            val articlePage = articleRepository.findAll(pageable)
+            val articlePage = articleService.findArticles(search, source, fromDate, toDate, pageable)
 
             val articleDtos = articlePage.content.map { ArticleDto.fromEntity(it) }
 

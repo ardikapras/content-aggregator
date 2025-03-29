@@ -1,4 +1,4 @@
-import { FC } from 'react';
+import { ChangeEvent, FC } from 'react';
 import { Form } from 'react-bootstrap';
 
 interface PageSizeSelectorProps {
@@ -7,7 +7,7 @@ interface PageSizeSelectorProps {
 }
 
 const PageSizeSelector: FC<PageSizeSelectorProps> = ({ pageSize, onPageSizeChange }) => {
-  const handleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+  const handleChange = (e: ChangeEvent<HTMLSelectElement>) => {
     onPageSizeChange(parseInt(e.target.value));
   };
 

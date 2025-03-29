@@ -90,6 +90,7 @@ const ScraperStatistics: FC = () => {
   return (
     <div className="scraper-stats">
       <h1 className="mb-4">Scraper Statistics</h1>
+      <h6 className="mb-4"> (still using mock data, for future development)</h6>
 
       {/* Overall Stats Cards */}
       <Row className="mb-4">

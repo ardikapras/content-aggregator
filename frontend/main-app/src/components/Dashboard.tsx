@@ -41,13 +41,16 @@ const Dashboard: FC = () => {
       <Alert variant="danger">
         <Alert.Heading>Error Loading Dashboard</Alert.Heading>
         <p>{error}</p>
-        <Button onClick={() => {
-          void refresh.stats();
-          void refresh.sourceHealth();
-          void refresh.activities();
-          void refresh.articles();
-          void refresh.trends();
-        }} variant="outline-danger">
+        <Button
+          onClick={() => {
+            void refresh.stats();
+            void refresh.sourceHealth();
+            void refresh.activities();
+            void refresh.articles();
+            void refresh.trends();
+          }}
+          variant="outline-danger"
+        >
           Retry
         </Button>
       </Alert>
@@ -83,11 +86,7 @@ const Dashboard: FC = () => {
             onClick={() => void refresh.stats()}
             disabled={loading.stats}
           >
-            {loading.stats ? (
-              <Spinner animation="border" size="sm" />
-            ) : (
-              <RefreshCw size={16} />
-            )}
+            {loading.stats ? <Spinner animation="border" size="sm" /> : <RefreshCw size={16} />}
           </Button>
         </div>
         <StatsCards stats={dashboardStats} />
@@ -160,11 +159,7 @@ const Dashboard: FC = () => {
               onClick={() => void refresh.trends()}
               disabled={loading.trends}
             >
-              {loading.trends ? (
-                <Spinner animation="border" size="sm" />
-              ) : (
-                <RefreshCw size={16} />
-              )}
+              {loading.trends ? <Spinner animation="border" size="sm" /> : <RefreshCw size={16} />}
             </Button>
           </div>
         </Card.Header>

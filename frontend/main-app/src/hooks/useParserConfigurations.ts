@@ -1,5 +1,19 @@
-import { useState, useEffect } from 'react';
-import { ParserConfigDto, ParserFormData, ParserTestResponse } from '../types/parserTypes';
+import { useState, useEffect, ChangeEvent, FormEvent } from 'react';
+import apiService, {
+  ParserConfigDto,
+  CreateParserConfigRequest,
+  ParserTestRequest,
+  ParserTestResponse,
+} from '../services/Api';
+
+export interface ParserFormData {
+  name: string;
+  description: string;
+  authorSelectors: string;
+  contentSelectors: string;
+  nextPageSelector: string;
+  contentFilters: string;
+}
 
 const INITIAL_FORM_DATA: ParserFormData = {
   name: '',
@@ -22,65 +36,23 @@ export const useParserConfigurations = () => {
   const [testResult, setTestResult] = useState<ParserTestResponse | null>(null);
   const [showTestResults, setShowTestResults] = useState(false);
 
-  useEffect(() => {
-    fetchParsers();
-  }, []);
-
   const fetchParsers = async () => {
     try {
       setLoading(true);
-      setTimeout(() => {
-        const mockParsers: ParserConfigDto[] = [
-          {
-            id: '1',
-            name: 'ANTARA',
-            description: 'Parser for Antara News',
-            authorSelectors: ['script[type=application/ld+json]'],
-            contentSelectors: ['div.post-content'],
-            contentFilters: ['span.baca-juga', 'p.text-muted'],
-            createdAt: '2023-06-15T10:30:00',
-            updatedAt: '2023-12-20T14:45:00',
-          },
-          {
-            id: '2',
-            name: 'CNBC',
-            description: 'Parser for CNBC Indonesia',
-            authorSelectors: ['script[type=application/ld+json]'],
-            contentSelectors: ['.detail-text', 'article p', '.article-content p'],
-            contentFilters: ['.media-institusi'],
-            createdAt: '2023-06-15T10:30:00',
-            updatedAt: '2023-12-21T09:15:00',
-          },
-          {
-            id: '3',
-            name: 'CNN',
-            description: 'Parser for CNN Indonesia',
-            authorSelectors: ['meta[name=author]', 'meta[name=content_author]'],
-            contentSelectors: ['.detail-text p', '.detail-wrap p', '.content-artikel p'],
-            contentFilters: ['.para_caption'],
-            createdAt: '2023-06-16T08:45:00',
-            updatedAt: '2023-12-19T11:30:00',
-          },
-          {
-            id: '4',
-            name: 'DEFAULT',
-            description: 'Default parser configuration',
-            authorSelectors: ['script[type=application/ld+json]', 'meta[name=author]'],
-            contentSelectors: ['.content p', 'main p', 'article p'],
-            contentFilters: [],
-            createdAt: '2023-06-14T09:00:00',
-            updatedAt: '2023-12-18T16:20:00',
-          },
-        ];
-        setParsers(mockParsers);
-        setLoading(false);
-      }, 1000);
+      const data = await apiService.getParserConfigs();
+      setParsers(data);
+      setError(null);
     } catch (err) {
       console.error('Error fetching parser configurations:', err);
       setError('Failed to load parser configurations');
+    } finally {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    void fetchParsers();
+  }, []);
 
   const handleAddParser = () => {
     setCurrentParser(null);
@@ -107,9 +79,19 @@ export const useParserConfigurations = () => {
     setShowModal(true);
   };
 
-  const handleDeleteParser = (parser: ParserConfigDto) => {
+  const handleDeleteParser = async (parser: ParserConfigDto) => {
     if (window.confirm(`Are you sure you want to delete ${parser.name}?`)) {
-      setParsers(prev => prev.filter(p => p.id !== parser.id));
+      try {
+        setLoading(true);
+        await apiService.deleteParserConfig(parser.id);
+        setParsers(prev => prev.filter(p => p.id !== parser.id));
+        setError(null);
+      } catch (err) {
+        console.error('Error deleting parser configuration:', err);
+        setError('Failed to delete parser configuration');
+      } finally {
+        setLoading(false);
+      }
     }
   };
 
@@ -117,48 +99,44 @@ export const useParserConfigurations = () => {
     setShowModal(false);
   };
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleInputChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
 
-    const newConfig: Partial<ParserConfigDto> = {
-      name: formData.name,
-      description: formData.description,
-      authorSelectors: formData.authorSelectors.split('\n').filter(s => s.trim() !== ''),
-      contentSelectors: formData.contentSelectors.split('\n').filter(s => s.trim() !== ''),
-      nextPageSelector: formData.nextPageSelector || undefined,
-      contentFilters: formData.contentFilters.split('\n').filter(s => s.trim() !== ''),
-    };
+    try {
+      setLoading(true);
 
-    if (currentParser) {
-      setParsers(prevParsers =>
-        prevParsers.map(p =>
-          p.id === currentParser.id
-            ? { ...p, ...newConfig, updatedAt: new Date().toISOString() }
-            : p
-        )
-      );
-    } else {
-      const newId = Math.max(...parsers.map(p => parseInt(p.id))) + 1;
-      setParsers(prevParsers => [
-        ...prevParsers,
-        {
-          id: newId.toString(),
-          ...(newConfig as ParserConfigDto),
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        },
-      ]);
+      const parserConfig = {
+        name: formData.name,
+        description: formData.description,
+        authorSelectors: formData.authorSelectors.split('\n').filter(s => s.trim() !== ''),
+        contentSelectors: formData.contentSelectors.split('\n').filter(s => s.trim() !== ''),
+        nextPageSelector: formData.nextPageSelector || undefined,
+        contentFilters: formData.contentFilters.split('\n').filter(s => s.trim() !== ''),
+      };
+
+      if (currentParser) {
+        await apiService.updateParserConfig(currentParser.id, parserConfig);
+      } else {
+        await apiService.createParserConfig(parserConfig as CreateParserConfigRequest);
+      }
+
+      setShowModal(false);
+      await fetchParsers();
+      setError(null);
+    } catch (err) {
+      console.error(`Failed to ${currentParser ? 'update' : 'create'} parser configuration:`, err);
+      setError(`Failed to ${currentParser ? 'update' : 'create'} parser configuration`);
+    } finally {
+      setLoading(false);
     }
-
-    handleCloseModal();
   };
 
-  const handleTestParser = () => {
+  const handleTestParser = async () => {
     if (!testUrl) {
       alert('Please enter a URL to test');
       return;
@@ -166,18 +144,41 @@ export const useParserConfigurations = () => {
 
     setTestLoading(true);
     setTestResult(null);
+    setShowTestResults(false);
 
-    setTimeout(() => {
-      setTestResult({
-        author: 'John Doe',
-        contentPreview:
-          'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nullam euismod, nisl eget ultricies ultricies, nunc nisl ultricies nunc, quis ultricies nisl nisl eget ultricies ultricies. Nullam euismod, nisl eget ultricies ultricies, nunc nisl ultricies nunc, quis ultricies nisl nisl eget ultricies ultricies.',
-        success: true,
-        message: 'Parser test successful',
-      });
-      setTestLoading(false);
+    try {
+      const testRequest: ParserTestRequest = {
+        url: testUrl,
+        config: {
+          name: formData.name || 'Test Parser',
+          description: formData.description || 'Temporary parser for testing',
+          authorSelectors: formData.authorSelectors.split('\n').filter(s => s.trim() !== ''),
+          contentSelectors: formData.contentSelectors.split('\n').filter(s => s.trim() !== ''),
+          nextPageSelector: formData.nextPageSelector || undefined,
+          contentFilters: formData.contentFilters.split('\n').filter(s => s.trim() !== ''),
+        },
+      };
+
+      const result = await apiService.testParserConfig(testRequest);
+      if (result.success && result.contentPreview) {
+        setTestResult({
+          ...result,
+          contentPreview: result.contentPreview,
+        });
+      } else {
+        setTestResult(result);
+      }
       setShowTestResults(true);
-    }, 2000);
+    } catch (err) {
+      console.error('Error testing parser configuration:', err);
+      setTestResult({
+        success: false,
+        message: 'Failed to test parser configuration. Check the URL and try again.',
+      });
+      setShowTestResults(true);
+    } finally {
+      setTestLoading(false);
+    }
   };
 
   const formatDate = (dateString: string) => {

@@ -1,11 +1,19 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import apiService, { ArticleDto } from '../services/Api';
 
 /**
- * Custom hook to fetch and manage article data with pagination
+ * Custom hook to fetch and manage article data with pagination, sorting and filtering
+ * Uses server-side search and filtering
  */
-const useArticles = () => {
+const useArticles = (
+  sortField: string = 'publishDate',
+  sortDirection: string = 'DESC',
+  filterSource: string = '',
+  dateRange: { from: string; to: string } = { from: '', to: '' },
+  searchTerm: string = ''
+) => {
   const [articles, setArticles] = useState<ArticleDto[]>([]);
+  const [sources, setSources] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -13,52 +21,59 @@ const useArticles = () => {
   const [pageSize, setPageSize] = useState(10);
   const [totalArticles, setTotalArticles] = useState(0);
 
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filteredArticles, setFilteredArticles] = useState<ArticleDto[]>([]);
-
-  useEffect(() => {
+  const fetchArticles = useCallback(async () => {
     setLoading(true);
 
-    const controller = new AbortController();
+    try {
+      const result = await apiService.getArticles(
+        currentPage,
+        pageSize,
+        sortField,
+        sortDirection,
+        searchTerm,
+        filterSource,
+        dateRange.from,
+        dateRange.to
+      );
 
-    (async () => {
-      try {
-        const result = await apiService.getArticles(currentPage, pageSize);
-        if (!controller.signal.aborted) {
-          setArticles(result.items);
-          setFilteredArticles(result.items);
-          setTotalArticles(result.total);
-          setError(null);
-        }
-      } catch (err) {
-        if (!controller.signal.aborted) {
-          setError('Failed to load articles');
-          console.error(err);
-        }
-      } finally {
-        if (!controller.signal.aborted) {
-          setLoading(false);
-        }
+      setArticles(result.items);
+      setTotalArticles(result.total);
+
+      if (sources.length === 0) {
+        const allSources = await apiService.getSources();
+        const uniqueSourceNames = allSources.map(source => source.name).sort();
+        setSources(uniqueSourceNames);
       }
-    })();
 
-    return () => controller.abort();
-  }, [currentPage, pageSize]);
+      setError(null);
+    } catch (err) {
+      console.error('Error fetching articles:', err);
+      setError('Failed to load articles');
+    } finally {
+      setLoading(false);
+    }
+  }, [
+    currentPage,
+    pageSize,
+    sortField,
+    sortDirection,
+    searchTerm,
+    filterSource,
+    dateRange,
+    sources.length,
+  ]);
 
   useEffect(() => {
-    if (searchTerm) {
-      const filtered = articles.filter(
-        article =>
-          article.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          article.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          (article.author && article.author.toLowerCase().includes(searchTerm.toLowerCase())) ||
-          article.source.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-      setFilteredArticles(filtered);
-    } else {
-      setFilteredArticles(articles);
-    }
-  }, [searchTerm, articles]);
+    const controller = new AbortController();
+
+    fetchArticles().catch(err => {
+      if (!controller.signal.aborted) {
+        console.error('Error in fetchArticles:', err);
+      }
+    });
+
+    return () => controller.abort();
+  }, [fetchArticles]);
 
   const handlePageChange = (pageNumber: number) => {
     setCurrentPage(pageNumber);
@@ -69,16 +84,17 @@ const useArticles = () => {
     setCurrentPage(0);
   };
 
-  const handleSearchChange = (term: string) => {
-    setSearchTerm(term);
+  const refresh = () => {
+    fetchArticles().catch(err => console.error('Error refreshing articles:', err));
   };
 
   const totalPages = Math.ceil(totalArticles / pageSize);
-  const startItem = currentPage * pageSize + 1;
+  const startItem = totalArticles === 0 ? 0 : currentPage * pageSize + 1;
   const endItem = Math.min((currentPage + 1) * pageSize, totalArticles);
 
   return {
-    articles: filteredArticles,
+    articles,
+    sources,
     loading,
     error,
     pagination: {
@@ -91,11 +107,7 @@ const useArticles = () => {
       handlePageChange,
       handlePageSizeChange,
     },
-    search: {
-      searchTerm,
-      handleSearchChange,
-      clearSearch: () => setSearchTerm(''),
-    },
+    refresh,
   };
 };
 
