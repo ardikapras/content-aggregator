@@ -25,7 +25,9 @@ const rootElement = document.getElementById('root');
 
 // Check if root element exists
 if (!rootElement) {
-  throw new Error('Root element not found. Make sure there is an element with id "root" in your HTML.');
+  throw new Error(
+    'Root element not found. Make sure there is an element with id "root" in your HTML.'
+  );
 }
 
 // Create root and render app
@@ -35,5 +37,5 @@ root.render(
     <QueryClientProvider client={queryClient}>
       <App />
     </QueryClientProvider>
-  </StrictMode>,
+  </StrictMode>
 );

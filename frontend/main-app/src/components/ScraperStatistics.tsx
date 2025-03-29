@@ -1,175 +1,60 @@
-import { FC, useState, useEffect } from 'react';
-import { Card, Row, Col, Table, Badge, Spinner, Alert, Tabs, Tab, Form } from 'react-bootstrap';
-import { Pie, Bar } from 'react-chartjs-2';
-import {
-  Chart,
-  ArcElement,
-  CategoryScale,
-  LinearScale,
-  BarElement,
-  Title,
-  Tooltip,
-  Legend,
-} from 'chart.js';
+import { FC } from 'react';
+import { Card, Row, Col, Table, Badge, Spinner, Alert, Tabs, Tab } from 'react-bootstrap';
+import useScraperStatistics from '../hooks/useScraperStatistics';
+import { BarChart, PieChart } from './charts';
 
-Chart.register(ArcElement, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
-
-interface ScraperStats {
-  totalRuns: number;
-  lastRun: string;
-  totalArticlesScraped: number;
-  successRate: number;
-  averageArticlesPerRun: number;
-  totalProcessingTimeMinutes: number;
-}
-
-interface SourceStats {
-  sourceId: string;
-  sourceName: string;
-  articlesScraped: number;
-  successRate: number;
-  averageProcessingTimeMs: number;
-  lastScrapeStatus: 'success' | 'failed';
-  lastScrapeTime: string;
-}
-
-interface ArticleStatus {
-  status: string;
-  count: number;
-  color: string;
-}
-
-interface DateRangeStats {
-  date: string;
-  articlesScraped: number;
-  successCount: number;
-  failureCount: number;
-  processingTimeMinutes: number;
+// Define this interface if not already defined in statisticsTypes.ts
+interface ChartData {
+  labels: string[];
+  datasets: {
+    label: string;
+    data: number[];
+    backgroundColor: string | string[];
+    borderColor?: string | string[];
+    borderWidth?: number;
+    fill?: boolean;
+  }[];
 }
 
 const ScraperStatistics: FC = () => {
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [overallStats, setOverallStats] = useState<ScraperStats | null>(null);
-  const [sourceStats, setSourceStats] = useState<SourceStats[]>([]);
-  const [articleStatusStats, setArticleStatusStats] = useState<ArticleStatus[]>([]);
-  const [dateRangeStats, setDateRangeStats] = useState<DateRangeStats[]>([]);
-  const [dateRange, setDateRange] = useState('7'); // days
+  const {
+    loading,
+    error,
+    overallStats,
+    sourceStats,
+    articleStatusStats,
+    dateRangeStats,
+    dateRange,
+    handleDateRangeChange,
+    formatDate,
+  } = useScraperStatistics();
 
-  useEffect(() => {
-    setTimeout(() => {
-      try {
-        setOverallStats({
-          totalRuns: 124,
-          lastRun: '2023-12-28T14:35:22',
-          totalArticlesScraped: 15642,
-          successRate: 94.3,
-          averageArticlesPerRun: 126,
-          totalProcessingTimeMinutes: 842,
-        });
+  if (loading) {
+    return (
+      <div className="text-center p-5">
+        <Spinner animation="border" role="status">
+          <span className="visually-hidden">Loading scraper statistics...</span>
+        </Spinner>
+        <p className="mt-3">Loading scraper statistics...</p>
+      </div>
+    );
+  }
 
-        setSourceStats([
-          {
-            sourceId: '1',
-            sourceName: 'ANTARA News',
-            articlesScraped: 4235,
-            successRate: 96.2,
-            averageProcessingTimeMs: 2540,
-            lastScrapeStatus: 'success',
-            lastScrapeTime: '2023-12-28T14:35:22',
-          },
-          {
-            sourceId: '2',
-            sourceName: 'CNBC Indonesia',
-            articlesScraped: 3812,
-            successRate: 93.7,
-            averageProcessingTimeMs: 2890,
-            lastScrapeStatus: 'success',
-            lastScrapeTime: '2023-12-28T14:30:15',
-          },
-          {
-            sourceId: '3',
-            sourceName: 'CNN Indonesia',
-            articlesScraped: 4120,
-            successRate: 95.1,
-            averageProcessingTimeMs: 2340,
-            lastScrapeStatus: 'success',
-            lastScrapeTime: '2023-12-28T14:32:45',
-          },
-          {
-            sourceId: '4',
-            sourceName: 'JPNN',
-            articlesScraped: 3475,
-            successRate: 91.8,
-            averageProcessingTimeMs: 3120,
-            lastScrapeStatus: 'failed',
-            lastScrapeTime: '2023-12-28T14:28:36',
-          },
-        ]);
+  if (error) {
+    return (
+      <Alert variant="danger">
+        <Alert.Heading>Error</Alert.Heading>
+        <p>{error}</p>
+      </Alert>
+    );
+  }
 
-        setArticleStatusStats([
-          { status: 'PROCESSED', count: 14280, color: '#198754' },
-          { status: 'SCRAPED', count: 520, color: '#0d6efd' },
-          { status: 'DISCOVERED', count: 420, color: '#ffc107' },
-          { status: 'ERROR_SCRAPE', count: 380, color: '#dc3545' },
-          { status: 'ERROR_PROCESS', count: 42, color: '#6c757d' },
-        ]);
-
-        generateDateRangeStats(parseInt(dateRange));
-
-        setLoading(false);
-      } catch (err) {
-        console.error('Error loading scraper stats:', err);
-        setError('Failed to load statistics data. Please try again later.');
-        setLoading(false);
-      }
-    }, 1200);
-  }, [dateRange]);
-
-  const generateDateRangeStats = (days: number) => {
-    const stats: DateRangeStats[] = [];
-    const now = new Date();
-
-    for (let i = days - 1; i >= 0; i--) {
-      const date = new Date(now);
-      date.setDate(date.getDate() - i);
-
-      const articlesScraped = Math.floor(Math.random() * 200) + 50;
-      const successRate = 85 + Math.random() * 15;
-      const successCount = Math.floor(articlesScraped * (successRate / 100));
-      const failureCount = articlesScraped - successCount;
-
-      stats.push({
-        date: date.toISOString().split('T')[0],
-        articlesScraped,
-        successCount,
-        failureCount,
-        processingTimeMinutes: Math.floor(articlesScraped * 0.05),
-      });
-    }
-
-    setDateRangeStats(stats);
-  };
-
-  const handleDateRangeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setDateRange(e.target.value);
-    generateDateRangeStats(parseInt(e.target.value));
-  };
-
-  const formatDate = (dateString: string) => {
-    try {
-      const date = new Date(dateString);
-      return date.toLocaleString();
-    } catch (e) {
-      console.error('Error parsing date:', e);
-      return dateString;
-    }
-  };
-
-  const statusChartData = {
+  // Prepare chart data
+  const statusChartData: ChartData = {
     labels: articleStatusStats.map(s => s.status),
     datasets: [
       {
+        label: 'Article Status',
         data: articleStatusStats.map(s => s.count),
         backgroundColor: articleStatusStats.map(s => s.color),
         borderWidth: 1,
@@ -177,7 +62,7 @@ const ScraperStatistics: FC = () => {
     ],
   };
 
-  const dailyActivityChartData = {
+  const dailyActivityChartData: ChartData = {
     labels: dateRangeStats.map(s => s.date),
     datasets: [
       {
@@ -203,26 +88,6 @@ const ScraperStatistics: FC = () => {
       },
     ],
   };
-
-  if (loading) {
-    return (
-      <div className="text-center p-5">
-        <Spinner animation="border" role="status">
-          <span className="visually-hidden">Loading scraper statistics...</span>
-        </Spinner>
-        <p className="mt-3">Loading scraper statistics...</p>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <Alert variant="danger">
-        <Alert.Heading>Error</Alert.Heading>
-        <p>{error}</p>
-      </Alert>
-    );
-  }
 
   return (
     <div className="scraper-stats">
@@ -262,35 +127,11 @@ const ScraperStatistics: FC = () => {
       {/* Tabs for different stat views */}
       <Tabs defaultActiveKey="activity" className="mb-4">
         <Tab eventKey="activity" title="Activity">
-          <Card className="shadow-sm mb-4">
-            <Card.Header className="d-flex justify-content-between align-items-center">
-              <h5 className="mb-0">Daily Scraping Activity</h5>
-              <Form.Select
-                value={dateRange}
-                onChange={handleDateRangeChange}
-                style={{ width: 'auto' }}
-              >
-                <option value="7">Last 7 days</option>
-                <option value="14">Last 14 days</option>
-                <option value="30">Last 30 days</option>
-              </Form.Select>
-            </Card.Header>
-            <Card.Body>
-              <div style={{ height: '300px' }}>
-                <Bar
-                  data={dailyActivityChartData}
-                  options={{
-                    maintainAspectRatio: false,
-                    scales: {
-                      y: {
-                        beginAtZero: true,
-                      },
-                    },
-                  }}
-                />
-              </div>
-            </Card.Body>
-          </Card>
+          <BarChart
+            chartData={dailyActivityChartData}
+            dateRange={dateRange}
+            onDateRangeChange={handleDateRangeChange}
+          />
         </Tab>
 
         <Tab eventKey="sources" title="Sources">
@@ -348,26 +189,7 @@ const ScraperStatistics: FC = () => {
         <Tab eventKey="status" title="Status Distribution">
           <Row>
             <Col md={6}>
-              <Card className="shadow-sm mb-4 h-100">
-                <Card.Header>
-                  <h5 className="mb-0">Article Status Distribution</h5>
-                </Card.Header>
-                <Card.Body className="d-flex justify-content-center">
-                  <div style={{ height: '300px', width: '300px' }}>
-                    <Pie
-                      data={statusChartData}
-                      options={{
-                        maintainAspectRatio: false,
-                        plugins: {
-                          legend: {
-                            position: 'right',
-                          },
-                        },
-                      }}
-                    />
-                  </div>
-                </Card.Body>
-              </Card>
+              <PieChart chartData={statusChartData} />
             </Col>
             <Col md={6}>
               <Card className="shadow-sm mb-4 h-100">
