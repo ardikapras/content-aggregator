@@ -35,4 +35,5 @@ data class Article(
     val retryCount: Int = 0,
     val lastAttempt: LocalDateTime = LocalDateTime.now(),
     val status: String = ArticleStatus.DISCOVERED.name,
+    val createdAt: LocalDateTime? = null,
 )

@@ -12,7 +12,7 @@ interface TopNavbarProps {
 
 const TopNavbar: FC<TopNavbarProps> = ({ onMenuClick, onRunScraper, isScraperRunning }) => {
   return (
-    <Navbar bg="dark" variant="dark" expand="lg" className="mb-3">
+    <Navbar bg="dark" variant="dark" expand="lg" className="mb-3 sticky-top">
       <Container fluid>
         <Link to="/dashboard" className="navbar-brand d-flex align-items-center">
           <NewspaperClipping size={24} className="me-2" />

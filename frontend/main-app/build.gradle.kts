@@ -22,7 +22,6 @@ tasks.register<com.github.gradle.node.npm.task.NpmTask>("runDev") {
     args.set(listOf("run", "dev"))
 }
 
-// Linting and formatting tasks
 tasks.register<com.github.gradle.node.npm.task.NpmTask>("lint") {
     dependsOn("install")
     args.set(listOf("run", "lint"))

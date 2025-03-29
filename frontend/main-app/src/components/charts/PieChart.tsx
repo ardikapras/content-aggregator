@@ -13,10 +13,8 @@ const PieChart: FC<PieChartProps> = ({ chartData }) => {
   const chartRef = useRef<ChartJS<'pie'> | null>(null);
 
   useEffect(() => {
-    // Store the current value of the ref in a variable
     const chart = chartRef.current;
 
-    // Return cleanup function
     return () => {
       if (chart) {
         chart.destroy();
@@ -44,11 +42,7 @@ const PieChart: FC<PieChartProps> = ({ chartData }) => {
       </Card.Header>
       <Card.Body className="d-flex justify-content-center">
         <div style={{ height: '300px', width: '300px' }}>
-          <Pie
-            data={chartData}
-            options={options}
-            ref={chartRef} // Set ref to access chart instance
-          />
+          <Pie data={chartData} options={options} ref={chartRef} />
         </div>
       </Card.Body>
     </Card>

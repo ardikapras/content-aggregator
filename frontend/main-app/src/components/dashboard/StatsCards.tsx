@@ -30,7 +30,7 @@ const StatsCards: FC<StatsCardsProps> = ({ stats }) => {
         <Card className="h-100 shadow-sm">
           <Card.Body className="text-center">
             <h3 className="display-4">{stats.articlesToday}</h3>
-            <Card.Title className="text-muted">Articles Today</Card.Title>
+            <Card.Title className="text-muted">Articles Scraped Today</Card.Title>
           </Card.Body>
         </Card>
       </Col>

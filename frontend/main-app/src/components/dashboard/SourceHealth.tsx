@@ -1,9 +1,9 @@
 import { FC } from 'react';
 import { Card, Row, Col, Table, Badge, Button } from 'react-bootstrap';
-import { SourceHealth as SourceHealthType } from '../../types/dashboardTypes';
+import { SourceHealthDto } from '../../services/Api.ts';
 
 interface SourceHealthProps {
-  sources: SourceHealthType[];
+  sources: SourceHealthDto[];
 }
 
 const SourceHealth: FC<SourceHealthProps> = ({ sources }) => {
@@ -22,7 +22,6 @@ const SourceHealth: FC<SourceHealthProps> = ({ sources }) => {
               <thead>
                 <tr>
                   <th>Name</th>
-                  <th>Status</th>
                   <th>Last Scraped</th>
                   <th>Active</th>
                 </tr>
@@ -31,19 +30,6 @@ const SourceHealth: FC<SourceHealthProps> = ({ sources }) => {
                 {sources.slice(0, 5).map(source => (
                   <tr key={source.id}>
                     <td>{source.name}</td>
-                    <td>
-                      <Badge
-                        bg={
-                          source.status === 'healthy'
-                            ? 'success'
-                            : source.status === 'warning'
-                              ? 'warning'
-                              : 'danger'
-                        }
-                      >
-                        {source.status}
-                      </Badge>
-                    </td>
                     <td>{source.lastScraped}</td>
                     <td>
                       <Badge bg={source.isActive ? 'success' : 'secondary'}>

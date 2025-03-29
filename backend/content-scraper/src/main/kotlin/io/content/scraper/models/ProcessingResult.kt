@@ -16,14 +16,14 @@ class ProcessingResult<out SUCCESS, out FAILURE> private constructor(
             if (success) {
                 _successValue as SUCCESS
             } else {
-                throw IllegalStateException("Can't get a success value from a failed result")
+                error("Can't get a success value from a failed result")
             }
 
     @Suppress("UNCHECKED_CAST")
     val failureValue: FAILURE
         get() =
             if (success) {
-                throw IllegalStateException("Can't get a failure value from a successful result")
+                error("Can't get a failure value from a successful result")
             } else {
                 _failureValue as FAILURE
             }

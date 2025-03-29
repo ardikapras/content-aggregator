@@ -14,13 +14,9 @@ export const useParserConfigurations = () => {
   const [parsers, setParsers] = useState<ParserConfigDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
-  // Modal state
   const [showModal, setShowModal] = useState(false);
   const [currentParser, setCurrentParser] = useState<ParserConfigDto | null>(null);
   const [formData, setFormData] = useState<ParserFormData>(INITIAL_FORM_DATA);
-
-  // Test state
   const [testUrl, setTestUrl] = useState('');
   const [testLoading, setTestLoading] = useState(false);
   const [testResult, setTestResult] = useState<ParserTestResponse | null>(null);
@@ -33,7 +29,6 @@ export const useParserConfigurations = () => {
   const fetchParsers = async () => {
     try {
       setLoading(true);
-      // Simulate API call with mock data
       setTimeout(() => {
         const mockParsers: ParserConfigDto[] = [
           {
@@ -114,7 +109,6 @@ export const useParserConfigurations = () => {
 
   const handleDeleteParser = (parser: ParserConfigDto) => {
     if (window.confirm(`Are you sure you want to delete ${parser.name}?`)) {
-      // In a real app, this would call an API to delete
       setParsers(prev => prev.filter(p => p.id !== parser.id));
     }
   };
@@ -173,7 +167,6 @@ export const useParserConfigurations = () => {
     setTestLoading(true);
     setTestResult(null);
 
-    // Simulate API call
     setTimeout(() => {
       setTestResult({
         author: 'John Doe',
