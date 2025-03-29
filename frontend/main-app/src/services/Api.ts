@@ -64,6 +64,39 @@ const api = axios.create({
   },
 });
 
+export interface DashboardStatsDto {
+  totalArticles: number;
+  totalActiveSources: number;
+  articlesLast24Hours: number;
+  lastScrapeTime: string | null;
+}
+
+export interface ArticleTrendDto {
+  date: string;
+  count: number;
+}
+
+export interface SourceHealthDto {
+  id: string;
+  name: string;
+  status: 'healthy' | 'warning' | 'error';
+  lastScraped: string | null;
+  isActive: boolean;
+  articleCount: number;
+}
+
+export interface RecentActivityDto {
+  id: string;
+  timestamp: string;
+  action: string;
+  sourcesCount: number;
+  articlesCount: number;
+  status: string;
+}
+
+// Time range for trend data
+export type TimeRange = '7D' | '1M' | '3M' | '6M' | '1Y' | 'ALL';
+
 const apiService = {
   // Articles
   getArticles: async (
@@ -139,6 +172,47 @@ const apiService = {
     const response = await api.post<ApiResponse<{ [source: string]: number }>>('/scraper/re-run');
     return response.data.data || {};
   },
+
+  // Get dashboard overview statistics
+  getDashboardStats: async (): Promise<DashboardStatsDto> => {
+    const response = await api.get<ApiResponse<DashboardStatsDto>>('/dashboard/stats');
+    return response.data.data || {
+      totalArticles: 0,
+      totalActiveSources: 0,
+      articlesLast24Hours: 0,
+      lastScrapeTime: null
+    };
+  },
+
+  // Get article trends by created date (scrape date)
+  getArticleTrendsByScrapedDate: async (timeRange: TimeRange = '7D'): Promise<ArticleTrendDto[]> => {
+    const response = await api.get<ApiResponse<ArticleTrendDto[]>>(`/dashboard/trends/scraped?range=${timeRange}`);
+    return response.data.data || [];
+  },
+
+  // Get article trends by publication date
+  getArticleTrendsByPublishedDate: async (timeRange: TimeRange = '7D'): Promise<ArticleTrendDto[]> => {
+    const response = await api.get<ApiResponse<ArticleTrendDto[]>>(`/dashboard/trends/published?range=${timeRange}`);
+    return response.data.data || [];
+  },
+
+  // Get source health information
+  getSourceHealth: async (): Promise<SourceHealthDto[]> => {
+    const response = await api.get<ApiResponse<SourceHealthDto[]>>('/dashboard/sources/health');
+    return response.data.data || [];
+  },
+
+  // Get recent activities
+  getRecentActivities: async (limit: number = 5): Promise<RecentActivityDto[]> => {
+    const response = await api.get<ApiResponse<RecentActivityDto[]>>(`/dashboard/activities?limit=${limit}`);
+    return response.data.data || [];
+  },
+
+  // Get recently scraped articles
+  getRecentArticles: async (limit: number = 5): Promise<ArticleDto[]> => {
+    const response = await api.get<ApiResponse<ArticleDto[]>>(`/dashboard/articles/recent?limit=${limit}`);
+    return response.data.data || [];
+  }
 };
 
 export default apiService;

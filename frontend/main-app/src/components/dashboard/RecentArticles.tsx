@@ -2,9 +2,10 @@ import { FC } from 'react';
 import { Card, Row, Col, Table, Button } from 'react-bootstrap';
 import { Article } from '../../types/dashboardTypes';
 import { formatDate } from '../../utils/dashboardUtils';
+import { ArticleDto } from '../../services/Api.ts';
 
 interface RecentArticlesProps {
-  articles: Article[];
+  articles: ArticleDto[];
 }
 
 const RecentArticles: FC<RecentArticlesProps> = ({ articles }) => {
@@ -14,7 +15,7 @@ const RecentArticles: FC<RecentArticlesProps> = ({ articles }) => {
         <Card className="shadow-sm">
           <Card.Header className="d-flex justify-content-between align-items-center">
             <h5 className="card-title mb-0">Recent Articles</h5>
-            <Button variant="outline-primary" size="sm" href="/">
+            <Button variant="outline-primary" size="sm" href="/articles">
               View All Articles
             </Button>
           </Card.Header>
