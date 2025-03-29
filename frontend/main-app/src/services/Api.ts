@@ -87,6 +87,48 @@ export interface RecentActivityDto {
 
 export type TimeRange = '7D' | '1M' | '3M' | '6M' | '1Y' | 'ALL';
 
+export interface ParserConfigDto {
+  id: string;
+  name: string;
+  description: string;
+  authorSelectors: string[];
+  contentSelectors: string[];
+  nextPageSelector?: string;
+  contentFilters: string[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateParserConfigRequest {
+  name: string;
+  description: string;
+  authorSelectors: string[];
+  contentSelectors: string[];
+  nextPageSelector?: string;
+  contentFilters: string[];
+}
+
+export interface UpdateParserConfigRequest {
+  name?: string;
+  description?: string;
+  authorSelectors?: string[];
+  contentSelectors?: string[];
+  nextPageSelector?: string;
+  contentFilters?: string[];
+}
+
+export interface ParserTestRequest {
+  url: string;
+  config: CreateParserConfigRequest;
+}
+
+export interface ParserTestResponse {
+  author?: string;
+  contentPreview?: string;
+  success: boolean;
+  message?: string;
+}
+
 class ApiService {
   private client: AxiosInstance;
 
@@ -220,6 +262,46 @@ class ApiService {
       `/dashboard/articles/recent?limit=${limit}`
     );
     return response.data?.data || [];
+  }
+
+  async getParserConfigs(): Promise<ParserConfigDto[]> {
+    const response = await this.client.get<ApiResponse<ParserConfigDto[]>>('/parser-configs');
+    return response.data?.data || [];
+  }
+
+  async getParserConfigById(id: string): Promise<ParserConfigDto> {
+    const response = await this.client.get<ApiResponse<ParserConfigDto>>(`/parser-configs/${id}`);
+    return this.extractData(response);
+  }
+
+  async createParserConfig(config: CreateParserConfigRequest): Promise<ParserConfigDto> {
+    const response = await this.client.post<ApiResponse<ParserConfigDto>>('/parser-configs', config);
+    return this.extractData(response);
+  }
+
+  async updateParserConfig(id: string, config: UpdateParserConfigRequest): Promise<ParserConfigDto> {
+    const response = await this.client.put<ApiResponse<ParserConfigDto>>(`/parser-configs/${id}`, config);
+    return this.extractData(response);
+  }
+
+  async deleteParserConfig(id: string): Promise<void> {
+    await this.client.delete<ApiResponse<void>>(`/parser-configs/${id}`);
+  }
+
+  async testParserConfig(request: ParserTestRequest): Promise<ParserTestResponse> {
+    try {
+      const response = await this.client.post<ApiResponse<ParserTestResponse>>(
+        '/parser-configs/test?fullContent=true',
+        request
+      );
+      return this.extractData(response);
+    } catch (error) {
+      console.error("Error testing parser configuration:", error);
+      return {
+        success: false,
+        message: "Failed to test parser configuration. Server error occurred."
+      };
+    }
   }
 }
 

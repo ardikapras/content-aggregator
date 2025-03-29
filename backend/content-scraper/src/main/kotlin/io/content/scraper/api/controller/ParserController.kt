@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 import java.util.UUID
 
@@ -133,6 +134,7 @@ class ParserController(
     @PostMapping("/test")
     fun testParserConfig(
         @RequestBody testRequest: ParserTestRequest,
+        @RequestParam(defaultValue = "false") fullContent: Boolean = false,
     ): ResponseEntity<ApiResponse<ParserTestResponse>> {
         try {
             val config = testRequest.config.toEntity()
@@ -141,10 +143,10 @@ class ParserController(
             return if (result.success) {
                 val content = result.successValue["content"] ?: ""
                 val contentPreview =
-                    if (content.length > 500) {
-                        content.substring(0, 500) + "..."
-                    } else {
+                    if (fullContent) {
                         content
+                    } else {
+                        content.substring(0, 500) + "..."
                     }
 
                 val response =

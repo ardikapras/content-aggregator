@@ -1,6 +1,8 @@
 package io.content.scraper.service
 
 import io.content.scraper.api.exception.NewsScraperException
+import io.content.scraper.enums.ActivityLogAction
+import io.content.scraper.enums.ActivityLogStatus
 import io.content.scraper.models.ParserConfig
 import io.content.scraper.models.ProcessingResult
 import io.content.scraper.parser.ParserManager
@@ -18,6 +20,7 @@ import java.util.UUID
 @Service
 class ParserService(
     private val parserConfigRepository: ParserConfigRepository,
+    private val activityLogService: ActivityLogService,
 ) {
     private val logger = KotlinLogging.logger {}
 
@@ -59,11 +62,21 @@ class ParserService(
     @Transactional
     fun createParserConfig(config: ParserConfig): ParserConfig {
         if (parserConfigRepository.findByName(config.name) != null) {
+            activityLogService.logActivity(
+                ActivityLogAction.PARSER_CONFIG.name,
+                ActivityLogStatus.FAILED.name,
+                "Another parser configuration with name '${config.name}' already exists",
+            )
             throw NewsScraperException("A parser configuration with name '${config.name}' already exists")
         }
 
         val saved = parserConfigRepository.save(config)
         ParserManager.updateConfig(saved)
+        activityLogService.logActivity(
+            ActivityLogAction.PARSER_CONFIG.name,
+            ActivityLogStatus.SUCCESS.name,
+            "Created parser configuration with name: ${saved.name}",
+        )
         return saved
     }
 
@@ -76,17 +89,32 @@ class ParserService(
         config: ParserConfig,
     ): ParserConfig {
         if (!parserConfigRepository.existsById(id)) {
+            activityLogService.logActivity(
+                ActivityLogAction.PARSER_CONFIG.name,
+                ActivityLogStatus.FAILED.name,
+                "Parser configuration not found with ID: $id",
+            )
             throw NewsScraperException("Parser configuration not found with ID: $id")
         }
 
         val existing = parserConfigRepository.findByName(config.name)
         if (existing != null && existing.id != id) {
+            activityLogService.logActivity(
+                ActivityLogAction.PARSER_CONFIG.name,
+                ActivityLogStatus.FAILED.name,
+                "Another parser configuration with name '${config.name}' already exists",
+            )
             throw NewsScraperException("Another parser configuration with name '${config.name}' already exists")
         }
 
         val toUpdate = config.copy(id = id)
         val saved = parserConfigRepository.save(toUpdate)
         ParserManager.updateConfig(saved)
+        activityLogService.logActivity(
+            ActivityLogAction.PARSER_CONFIG.name,
+            ActivityLogStatus.SUCCESS.name,
+            "Updated parser configuration with name: ${saved.name}",
+        )
         return saved
     }
 
@@ -96,10 +124,20 @@ class ParserService(
     @Transactional
     fun deleteParserConfig(id: UUID) {
         if (!parserConfigRepository.existsById(id)) {
+            activityLogService.logActivity(
+                ActivityLogAction.PARSER_CONFIG.name,
+                ActivityLogStatus.FAILED.name,
+                "Parser configuration not found with ID: $id",
+            )
             throw NewsScraperException("Parser configuration not found with ID: $id")
         }
 
         parserConfigRepository.deleteById(id)
+        activityLogService.logActivity(
+            ActivityLogAction.PARSER_CONFIG.name,
+            ActivityLogStatus.SUCCESS.name,
+            "Deleted parser configuration with ID: $id",
+        )
     }
 
     /**

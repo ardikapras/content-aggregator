@@ -5,6 +5,8 @@ import com.rometools.rome.feed.synd.SyndEntry
 import com.rometools.rome.feed.synd.SyndFeed
 import com.rometools.rome.io.SyndFeedInput
 import io.content.scraper.constants.KafkaTopics.CONTENT_TO_SCRAPE
+import io.content.scraper.enums.ActivityLogAction
+import io.content.scraper.enums.ActivityLogStatus
 import io.content.scraper.enums.ArticleStatus
 import io.content.scraper.models.Article
 import io.content.scraper.models.KafkaMessage
@@ -27,7 +29,7 @@ import java.time.ZoneId
 class CollectorService(
     private val sourceRepository: SourceRepository,
     private val articleRepository: ArticleRepository,
-    private val activityService: ActivityService,
+    private val activityLogService: ActivityLogService,
     private val applicationScope: CoroutineScope,
     private val objectMapper: ObjectMapper,
     private val kafkaTemplate: KafkaTemplate<String, String>,
@@ -51,10 +53,10 @@ class CollectorService(
                 }
                 sourceRepository.save(source.copy(lastScraped = LocalDateTime.now()))
             }
-            activityService.logActivity(
-                action = "SCRAPE",
-                status = "SUCCESS",
-                details = "Scraped ${articleCountsBySource.values.sum()} articles from ${articleCountsBySource.size} sources",
+            activityLogService.logActivity(
+                ActivityLogAction.SCRAPE.name,
+                ActivityLogStatus.SUCCESS.name,
+                "Scraped ${articleCountsBySource.values.sum()} articles from ${articleCountsBySource.size} sources",
             )
             logger.debug { "Scraping job completed" }
             articleCountsBySource
@@ -176,18 +178,18 @@ class CollectorService(
                 logger.debug { "Pushed article ${article.id} to Kafka" }
             }
 
-            activityService.logActivity(
-                action = "RETRY_SCRAPE",
-                status = "SUCCESS",
-                details = "Successfully retried ${pendingArticles.size} pending articles",
+            activityLogService.logActivity(
+                ActivityLogAction.RETRY_SCRAPE.name,
+                ActivityLogStatus.SUCCESS.name,
+                "Successfully retried ${pendingArticles.size} pending articles",
             )
         } catch (e: Exception) {
             logger.error(e) { "Error retrying pending articles" }
 
-            activityService.logActivity(
-                action = "RETRY_SCRAPE",
-                status = "FAILED",
-                details = "Failed to retry pending articles: ${e.message}",
+            activityLogService.logActivity(
+                ActivityLogAction.RETRY_SCRAPE.name,
+                ActivityLogStatus.FAILED.name,
+                "Failed to retry pending articles: ${e.message}",
             )
 
             throw e

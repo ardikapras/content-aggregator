@@ -1,10 +1,12 @@
 package io.content.scraper.service
 
 import io.content.scraper.api.dto.ActivityLogDto
+import io.content.scraper.models.ActivityLog
 import io.content.scraper.repository.ActivityLogRepository
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.stereotype.Service
 import java.time.LocalDateTime
+import java.util.UUID
 
 @Service
 class ActivityLogService(
@@ -43,5 +45,25 @@ class ActivityLogService(
         return activityLogRepository
             .findByStatus(status)
             .map { ActivityLogDto.fromEntity(it) }
+    }
+
+    /**
+     * Log a scraper activity
+     */
+    fun logActivity(
+        action: String,
+        status: String,
+        details: String? = null,
+    ): ActivityLog {
+        val activityLog =
+            ActivityLog(
+                id = UUID.randomUUID(),
+                timestamp = LocalDateTime.now(),
+                action = action,
+                status = status,
+                details = details,
+            )
+
+        return activityLogRepository.save(activityLog)
     }
 }

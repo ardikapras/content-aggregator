@@ -1,4 +1,4 @@
-import { FC } from 'react';
+import { ChangeEvent, FC, FormEvent } from 'react';
 import { Modal, Form, Button, Row, Col, Spinner } from 'react-bootstrap';
 import { ParserConfigDto, ParserFormData, ParserTestResponse } from '../../types/parserTypes';
 import ParserTestResults from './ParserTestResults';
@@ -8,8 +8,8 @@ interface ParserConfigModalProps {
   onClose: () => void;
   currentParser: ParserConfigDto | null;
   formData: ParserFormData;
-  onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
-  onSubmit: (e: React.FormEvent) => void;
+  onChange: (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
+  onSubmit: (e: FormEvent) => void;
   testUrl: string;
   setTestUrl: (url: string) => void;
   onTest: () => void;

@@ -1,5 +1,6 @@
 package io.content.scraper.api.dto
 
+import com.fasterxml.jackson.annotation.JsonFormat
 import io.content.scraper.models.ParserConfig
 import java.time.LocalDateTime
 
@@ -14,7 +15,9 @@ data class ParserConfigDto(
     val contentSelectors: List<String>,
     val nextPageSelector: String?,
     val contentFilters: List<String>,
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSS")
     val createdAt: LocalDateTime,
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSS")
     val updatedAt: LocalDateTime,
 ) {
     companion object {
