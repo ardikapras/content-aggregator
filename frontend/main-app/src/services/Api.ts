@@ -150,10 +150,36 @@ class ApiService {
     page = 0,
     size = 10,
     sortBy = 'publishDate',
-    direction = 'DESC'
+    direction = 'DESC',
+    searchTerm = '',
+    source = '',
+    fromDate = '',
+    toDate = ''
   ): Promise<{ items: ArticleDto[]; total: number }> {
+    const params = new URLSearchParams();
+    params.append('page', page.toString());
+    params.append('size', size.toString());
+    params.append('sortBy', sortBy);
+    params.append('direction', direction);
+
+    if (searchTerm) {
+      params.append('search', searchTerm);
+    }
+
+    if (source) {
+      params.append('source', source);
+    }
+
+    if (fromDate) {
+      params.append('fromDate', fromDate);
+    }
+
+    if (toDate) {
+      params.append('toDate', toDate);
+    }
+
     const response = await this.client.get<ApiResponse<PageResponse<ArticleDto>>>(
-      `/articles?page=${page}&size=${size}&sortBy=${sortBy}&direction=${direction}`
+      `/articles?${params.toString()}`
     );
 
     if (response.data?.data) {
