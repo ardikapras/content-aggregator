@@ -1,6 +1,5 @@
 import { FC } from 'react';
-import { Card, Badge } from 'react-bootstrap';
-import { Activity } from '../../types/dashboardTypes';
+import { Card } from 'react-bootstrap';
 import { formatDate } from '../../utils/dashboardUtils';
 import { RecentActivityDto } from '../../services/Api.ts';
 

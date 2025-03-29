@@ -211,24 +211,28 @@ class ApiService {
 
   // Scraper methods
   async triggerScraping(): Promise<{ [source: string]: number }> {
-    const response = await this.client.post<ApiResponse<{ [source: string]: number }>>('/scraper/run');
+    const response =
+      await this.client.post<ApiResponse<{ [source: string]: number }>>('/scraper/run');
     return response.data?.data || {};
   }
 
   async retryPendingArticles(): Promise<{ [source: string]: number }> {
-    const response = await this.client.post<ApiResponse<{ [source: string]: number }>>('/scraper/re-run');
+    const response =
+      await this.client.post<ApiResponse<{ [source: string]: number }>>('/scraper/re-run');
     return response.data?.data || {};
   }
 
   // Dashboard methods
   async getDashboardStats(): Promise<DashboardStatsDto> {
     const response = await this.client.get<ApiResponse<DashboardStatsDto>>('/dashboard/stats');
-    return this.extractData(response) || {
-      totalArticles: 0,
-      totalActiveSources: 0,
-      articlesLast24Hours: 0,
-      lastScrapeTime: null,
-    };
+    return (
+      this.extractData(response) || {
+        totalArticles: 0,
+        totalActiveSources: 0,
+        articlesLast24Hours: 0,
+        lastScrapeTime: null,
+      }
+    );
   }
 
   async getArticleTrendsByScrapedDate(timeRange: TimeRange = '7D'): Promise<ArticleTrendDto[]> {
@@ -246,7 +250,9 @@ class ApiService {
   }
 
   async getSourceHealth(): Promise<SourceHealthDto[]> {
-    const response = await this.client.get<ApiResponse<SourceHealthDto[]>>('/dashboard/sources/health');
+    const response = await this.client.get<ApiResponse<SourceHealthDto[]>>(
+      '/dashboard/sources/health'
+    );
     return response.data?.data || [];
   }
 
@@ -275,12 +281,21 @@ class ApiService {
   }
 
   async createParserConfig(config: CreateParserConfigRequest): Promise<ParserConfigDto> {
-    const response = await this.client.post<ApiResponse<ParserConfigDto>>('/parser-configs', config);
+    const response = await this.client.post<ApiResponse<ParserConfigDto>>(
+      '/parser-configs',
+      config
+    );
     return this.extractData(response);
   }
 
-  async updateParserConfig(id: string, config: UpdateParserConfigRequest): Promise<ParserConfigDto> {
-    const response = await this.client.put<ApiResponse<ParserConfigDto>>(`/parser-configs/${id}`, config);
+  async updateParserConfig(
+    id: string,
+    config: UpdateParserConfigRequest
+  ): Promise<ParserConfigDto> {
+    const response = await this.client.put<ApiResponse<ParserConfigDto>>(
+      `/parser-configs/${id}`,
+      config
+    );
     return this.extractData(response);
   }
 
@@ -296,10 +311,10 @@ class ApiService {
       );
       return this.extractData(response);
     } catch (error) {
-      console.error("Error testing parser configuration:", error);
+      console.error('Error testing parser configuration:', error);
       return {
         success: false,
-        message: "Failed to test parser configuration. Server error occurred."
+        message: 'Failed to test parser configuration. Server error occurred.',
       };
     }
   }

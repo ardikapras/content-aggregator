@@ -28,9 +28,9 @@ const ParserTestResults: FC<ParserTestResultsProps> = ({ testResult, showResults
               <Tabs defaultActiveKey="formatted" id="parser-result-tabs">
                 <Tab eventKey="formatted" title="Formatted">
                   <div className="mt-3">
-                    {testResult.contentPreview?.split('\n').map((paragraph, i) => (
-                      <p key={i}>{paragraph}</p>
-                    ))}
+                    {testResult.contentPreview
+                      ?.split('\n')
+                      .map((paragraph, i) => <p key={i}>{paragraph}</p>)}
                   </div>
                 </Tab>
                 <Tab eventKey="raw" title="Raw">

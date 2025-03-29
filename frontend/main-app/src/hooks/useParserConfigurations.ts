@@ -3,7 +3,7 @@ import apiService, {
   ParserConfigDto,
   CreateParserConfigRequest,
   ParserTestRequest,
-  ParserTestResponse
+  ParserTestResponse,
 } from '../services/Api';
 
 export interface ParserFormData {
@@ -163,7 +163,7 @@ export const useParserConfigurations = () => {
       if (result.success && result.contentPreview) {
         setTestResult({
           ...result,
-          contentPreview: result.contentPreview
+          contentPreview: result.contentPreview,
         });
       } else {
         setTestResult(result);
