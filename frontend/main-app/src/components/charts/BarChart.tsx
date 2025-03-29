@@ -13,7 +13,6 @@ import {
 } from 'chart.js';
 import { Bar } from 'react-chartjs-2';
 
-// Register ChartJS components
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
 interface BarChartProps {
@@ -26,10 +25,8 @@ const BarChart: FC<BarChartProps> = ({ chartData, dateRange, onDateRangeChange }
   const chartRef = useRef<ChartJS<'bar'> | null>(null);
 
   useEffect(() => {
-    // Store the current value of the ref in a variable
     const chart = chartRef.current;
 
-    // Return cleanup function
     return () => {
       if (chart) {
         chart.destroy();
@@ -71,11 +68,7 @@ const BarChart: FC<BarChartProps> = ({ chartData, dateRange, onDateRangeChange }
       </Card.Header>
       <Card.Body>
         <div style={{ height: '300px' }}>
-          <Bar
-            data={chartData}
-            options={options}
-            ref={chartRef} // Set ref to access chart instance
-          />
+          <Bar data={chartData} options={options} ref={chartRef} />
         </div>
       </Card.Body>
     </Card>

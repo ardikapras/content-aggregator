@@ -1,7 +1,7 @@
 package io.content.scraper.service
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import io.content.scraper.constant.KafkaTopics
+import io.content.scraper.constants.KafkaTopics
 import io.content.scraper.enums.ArticleStatus
 import io.content.scraper.models.Article
 import io.content.scraper.models.KafkaMessage

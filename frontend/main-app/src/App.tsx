@@ -23,14 +23,12 @@ const App = () => {
     error: false,
   });
 
-  // Handle scraper run action
   const handleRunScraper = async () => {
     try {
       setScraperStatus({ loading: true, message: 'Running scraper...', error: false });
 
       const result = await apiService.triggerScraping();
 
-      // Calculate total articles scraped
       const totalScraped = Object.values(result).reduce((sum, count) => sum + count, 0);
       const sourceCount = Object.keys(result).length;
 
@@ -40,7 +38,6 @@ const App = () => {
         error: false,
       });
 
-      // Clear status message after 5 seconds
       setTimeout(() => {
         setScraperStatus(prev => ({ ...prev, message: null }));
       }, 5000);
@@ -54,7 +51,6 @@ const App = () => {
     }
   };
 
-  // Listen for the run scraper route
   useEffect(() => {
     const handleRouteChange = () => {
       if (window.location.pathname === '/scraper/run') {
@@ -62,10 +58,7 @@ const App = () => {
       }
     };
 
-    // Check on initial load
     handleRouteChange();
-
-    // Could add a more sophisticated router listener here if needed
   }, []);
 
   return (

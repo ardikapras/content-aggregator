@@ -3,7 +3,6 @@ import { Card, Row, Col, Table, Badge, Spinner, Alert, Tabs, Tab } from 'react-b
 import useScraperStatistics from '../hooks/useScraperStatistics';
 import { BarChart, PieChart } from './charts';
 
-// Define this interface if not already defined in statisticsTypes.ts
 interface ChartData {
   labels: string[];
   datasets: {
@@ -49,7 +48,6 @@ const ScraperStatistics: FC = () => {
     );
   }
 
-  // Prepare chart data
   const statusChartData: ChartData = {
     labels: articleStatusStats.map(s => s.status),
     datasets: [

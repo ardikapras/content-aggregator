@@ -15,16 +15,13 @@ const useScraper = (onSuccess?: () => void) => {
 
       const result = await apiService.triggerScraping();
 
-      // Calculate total articles scraped
       const totalScraped = Object.values(result).reduce((sum, count) => sum + count, 0);
 
       setScraperMessage(
         `Successfully scraped ${totalScraped} articles from ${Object.keys(result).length} sources.`
       );
 
-      // Call success callback if provided
       if (onSuccess) {
-        // Delay to allow user to see the success message
         setTimeout(onSuccess, 3000);
       }
     } catch (error) {

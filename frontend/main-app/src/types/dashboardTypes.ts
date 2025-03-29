@@ -29,8 +29,7 @@ export interface Activity {
   id: string;
   timestamp: string;
   action: string;
-  sourcesCount: number;
-  articlesCount: number;
+  details: string;
   status: string;
 }
 
@@ -54,5 +53,4 @@ export interface Article {
   source: string;
   publishDate: string | null;
   url: string;
-  // Additional fields can be added as needed
 }

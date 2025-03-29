@@ -1,6 +1,5 @@
 import { FC } from 'react';
 import { Card, Row, Col, Table, Badge, Button } from 'react-bootstrap';
-import { SourceHealth as SourceHealthType } from '../../types/dashboardTypes';
 import { SourceHealthDto } from '../../services/Api.ts';
 
 interface SourceHealthProps {

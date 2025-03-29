@@ -1,6 +1,5 @@
 import { FC } from 'react';
 import { Card, Row, Col, Table, Button } from 'react-bootstrap';
-import { Article } from '../../types/dashboardTypes';
 import { formatDate } from '../../utils/dashboardUtils';
 import { ArticleDto } from '../../services/Api.ts';
 

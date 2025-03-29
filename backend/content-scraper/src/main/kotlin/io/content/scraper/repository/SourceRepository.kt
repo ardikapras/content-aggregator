@@ -11,4 +11,14 @@ interface SourceRepository : JpaRepository<Source, UUID> {
      * Find all active sources
      */
     fun findByIsActiveTrue(): List<Source>
+
+    /**
+     * Count active sources
+     */
+    fun countByIsActiveTrue(): Long
+
+    /**
+     * Find the most recently scraped source
+     */
+    fun findTopByOrderByLastScrapedDesc(): Source?
 }

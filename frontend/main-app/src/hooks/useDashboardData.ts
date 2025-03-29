@@ -5,11 +5,17 @@ import apiService, {
   SourceHealthDto,
   RecentActivityDto,
   ArticleDto,
-  TimeRange
+  TimeRange,
 } from '../services/Api';
 
 interface DashboardDataHook {
-  loading: boolean;
+  loading: {
+    stats: boolean;
+    sourceHealth: boolean;
+    activities: boolean;
+    articles: boolean;
+    trends: boolean;
+  };
   error: string | null;
   stats: DashboardStatsDto | null;
   sourceHealth: SourceHealthDto[];
@@ -21,12 +27,24 @@ interface DashboardDataHook {
   selectedTrendView: 'scraped' | 'published';
   setTimeRange: (range: TimeRange) => void;
   setTrendView: (view: 'scraped' | 'published') => void;
-  refreshData: () => Promise<void>;
+  refresh: {
+    stats: () => Promise<void>;
+    sourceHealth: () => Promise<void>;
+    activities: () => Promise<void>;
+    articles: () => Promise<void>;
+    trends: () => Promise<void>;
+  };
   formatDate: (dateStr: string | null) => string;
 }
 
 const useDashboardData = (): DashboardDataHook => {
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState({
+    stats: true,
+    sourceHealth: true,
+    activities: true,
+    articles: true,
+    trends: true,
+  });
   const [error, setError] = useState<string | null>(null);
   const [stats, setStats] = useState<DashboardStatsDto | null>(null);
   const [sourceHealth, setSourceHealth] = useState<SourceHealthDto[]>([]);
@@ -47,7 +65,7 @@ const useDashboardData = (): DashboardDataHook => {
         month: 'short',
         day: 'numeric',
         hour: '2-digit',
-        minute: '2-digit'
+        minute: '2-digit',
       });
     } catch (err) {
       console.error('Date formatting error:', err);
@@ -63,59 +81,74 @@ const useDashboardData = (): DashboardDataHook => {
     setSelectedTrendView(view);
   }, []);
 
-  const fetchDashboardData = useCallback(async () => {
-    setLoading(true);
+  const refreshStats = useCallback(async () => {
+    setLoading(prev => ({ ...prev, stats: true }));
     setError(null);
 
-    const getDashboardStats = (): Promise<DashboardStatsDto> =>
-      apiService.getDashboardStats();
+    try {
+      const statsData = await apiService.getDashboardStats();
+      setStats(statsData);
+    } catch (err) {
+      console.error('Error fetching dashboard stats:', err);
+      setError('Failed to load dashboard stats. Please try again.');
+    } finally {
+      setLoading(prev => ({ ...prev, stats: false }));
+    }
+  }, []);
 
-    const getScrapedTrend = (): Promise<ArticleTrendDto[]> =>
-      apiService.getArticleTrendsByScrapedDate(selectedTimeRange);
-
-    const getPublishedTrend = (): Promise<ArticleTrendDto[]> =>
-      apiService.getArticleTrendsByPublishedDate(selectedTimeRange);
-
-    const getSourceHealth = (): Promise<SourceHealthDto[]> =>
-      apiService.getSourceHealth();
-
-    const getRecentActivities = (): Promise<RecentActivityDto[]> =>
-      apiService.getRecentActivities();
-
-    const getRecentArticles = (): Promise<ArticleDto[]> =>
-      apiService.getRecentArticles();
+  const refreshSourceHealth = useCallback(async () => {
+    setLoading(prev => ({ ...prev, sourceHealth: true }));
+    setError(null);
 
     try {
-      const statsData = await getDashboardStats();
-      const scrapedTrendData = await getScrapedTrend();
-      const publishedTrendData = await getPublishedTrend();
-      const sourceHealthData = await getSourceHealth();
-      const recentActivitiesData = await getRecentActivities();
-      const recentArticlesData = await getRecentArticles();
-
-      // Update state with the fetched data
-      setStats(statsData);
-      setScrapedTrend(scrapedTrendData);
-      setPublishedTrend(publishedTrendData);
+      const sourceHealthData = await apiService.getSourceHealth();
       setSourceHealth(sourceHealthData);
+    } catch (err) {
+      console.error('Error fetching source health:', err);
+      setError('Failed to load source health data. Please try again.');
+    } finally {
+      setLoading(prev => ({ ...prev, sourceHealth: false }));
+    }
+  }, []);
+
+  const refreshActivities = useCallback(async () => {
+    setLoading(prev => ({ ...prev, activities: true }));
+    setError(null);
+
+    try {
+      const recentActivitiesData = await apiService.getRecentActivities();
       setRecentActivities(recentActivitiesData);
+    } catch (err) {
+      console.error('Error fetching recent activities:', err);
+      setError('Failed to load recent activities. Please try again.');
+    } finally {
+      setLoading(prev => ({ ...prev, activities: false }));
+    }
+  }, []);
+
+  const refreshArticles = useCallback(async () => {
+    setLoading(prev => ({ ...prev, articles: true }));
+    setError(null);
+
+    try {
+      const recentArticlesData = await apiService.getRecentArticles();
       setRecentArticles(recentArticlesData);
     } catch (err) {
-      console.error('Error fetching dashboard data:', err);
-      setError('Failed to load dashboard data. Please try again.');
+      console.error('Error fetching recent articles:', err);
+      setError('Failed to load recent articles. Please try again.');
     } finally {
-      setLoading(false);
+      setLoading(prev => ({ ...prev, articles: false }));
     }
-  }, [selectedTimeRange]);
+  }, []);
 
-  // Fetch trend data only (for time range changes)
-  const fetchTrendData = useCallback(async () => {
-    setLoading(true);
+  const refreshTrends = useCallback(async () => {
+    setLoading(prev => ({ ...prev, trends: true }));
+    setError(null);
 
     try {
       const [scrapedTrendData, publishedTrendData] = await Promise.all([
         apiService.getArticleTrendsByScrapedDate(selectedTimeRange),
-        apiService.getArticleTrendsByPublishedDate(selectedTimeRange)
+        apiService.getArticleTrendsByPublishedDate(selectedTimeRange),
       ]);
 
       setScrapedTrend(scrapedTrendData);
@@ -124,17 +157,22 @@ const useDashboardData = (): DashboardDataHook => {
       console.error('Error fetching trend data:', err);
       setError('Failed to load trend data. Please try again.');
     } finally {
-      setLoading(false);
+      setLoading(prev => ({ ...prev, trends: false }));
     }
   }, [selectedTimeRange]);
 
+  // Initial data loading
   useEffect(() => {
-    fetchDashboardData();
-  }, [fetchDashboardData]);
+    void refreshStats();
+    void refreshSourceHealth();
+    void refreshActivities();
+    void refreshArticles();
+  }, [refreshStats, refreshSourceHealth, refreshActivities, refreshArticles]);
 
+  // Only refresh trend data when timeRange changes
   useEffect(() => {
-    fetchTrendData();
-  }, [selectedTimeRange, fetchTrendData]);
+    void refreshTrends();
+  }, [selectedTimeRange, refreshTrends]);
 
   return {
     loading,
@@ -149,8 +187,14 @@ const useDashboardData = (): DashboardDataHook => {
     selectedTrendView,
     setTimeRange,
     setTrendView,
-    refreshData: fetchDashboardData,
-    formatDate
+    refresh: {
+      stats: refreshStats,
+      sourceHealth: refreshSourceHealth,
+      activities: refreshActivities,
+      articles: refreshArticles,
+      trends: refreshTrends,
+    },
+    formatDate,
   };
 };
 

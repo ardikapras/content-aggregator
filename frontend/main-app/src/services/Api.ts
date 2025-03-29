@@ -1,4 +1,4 @@
-import axios from 'axios';
+import axios, { AxiosInstance, AxiosResponse } from 'axios';
 
 const API_BASE_URL = 'http://localhost:8080/api';
 
@@ -57,13 +57,6 @@ export interface ApiResponse<T> {
   status: number;
 }
 
-const api = axios.create({
-  baseURL: API_BASE_URL,
-  headers: {
-    'Content-Type': 'application/json',
-  },
-});
-
 export interface DashboardStatsDto {
   totalArticles: number;
   totalActiveSources: number;
@@ -89,27 +82,39 @@ export interface RecentActivityDto {
   id: string;
   timestamp: string;
   action: string;
-  sourcesCount: number;
-  articlesCount: number;
-  status: string;
+  details: string;
 }
 
-// Time range for trend data
 export type TimeRange = '7D' | '1M' | '3M' | '6M' | '1Y' | 'ALL';
 
-const apiService = {
-  // Articles
-  getArticles: async (
+class ApiService {
+  private client: AxiosInstance;
+
+  constructor() {
+    this.client = axios.create({
+      baseURL: API_BASE_URL,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+  }
+
+  private extractData<T>(response: AxiosResponse<ApiResponse<T>>): T {
+    return (response.data?.data as T) || ({} as T);
+  }
+
+  // Article methods
+  async getArticles(
     page = 0,
     size = 10,
     sortBy = 'publishDate',
     direction = 'DESC'
-  ): Promise<{ items: ArticleDto[]; total: number }> => {
-    const response = await api.get<ApiResponse<PageResponse<ArticleDto>>>(
+  ): Promise<{ items: ArticleDto[]; total: number }> {
+    const response = await this.client.get<ApiResponse<PageResponse<ArticleDto>>>(
       `/articles?page=${page}&size=${size}&sortBy=${sortBy}&direction=${direction}`
     );
 
-    if (response.data.data) {
+    if (response.data?.data) {
       return {
         items: response.data.data.content || [],
         total: response.data.data.totalElements || 0,
@@ -117,102 +122,106 @@ const apiService = {
     }
 
     return { items: [], total: 0 };
-  },
+  }
 
-  getArticleById: async (id: string): Promise<ArticleDto> => {
-    const response = await api.get<ApiResponse<ArticleDto>>(`/articles/${id}`);
-    return response.data.data as ArticleDto;
-  },
+  async getArticleById(id: string): Promise<ArticleDto> {
+    const response = await this.client.get<ApiResponse<ArticleDto>>(`/articles/${id}`);
+    return this.extractData(response);
+  }
 
-  getArticlesBySource: async (sourceId: string, page = 0, size = 20): Promise<ArticleDto[]> => {
-    const response = await api.get<ApiResponse<ArticleDto[]>>(
+  async getArticlesBySource(sourceId: string, page = 0, size = 20): Promise<ArticleDto[]> {
+    const response = await this.client.get<ApiResponse<ArticleDto[]>>(
       `/articles/source/${sourceId}?page=${page}&size=${size}`
     );
-    return response.data.data || [];
-  },
+    return response.data?.data || [];
+  }
 
-  // Sources
-  getSources: async (): Promise<SourceDto[]> => {
-    const response = await api.get<ApiResponse<SourceDto[]>>('/sources');
-    return response.data.data || [];
-  },
+  // Source methods
+  async getSources(): Promise<SourceDto[]> {
+    const response = await this.client.get<ApiResponse<SourceDto[]>>('/sources');
+    return response.data?.data || [];
+  }
 
-  getSourceById: async (id: string): Promise<SourceDto> => {
-    const response = await api.get<ApiResponse<SourceDto>>(`/sources/${id}`);
-    return response.data.data as SourceDto;
-  },
+  async getSourceById(id: string): Promise<SourceDto> {
+    const response = await this.client.get<ApiResponse<SourceDto>>(`/sources/${id}`);
+    return this.extractData(response);
+  }
 
-  getActiveSources: async (): Promise<SourceDto[]> => {
-    const response = await api.get<ApiResponse<SourceDto[]>>('/sources/active');
-    return response.data.data || [];
-  },
+  async getActiveSources(): Promise<SourceDto[]> {
+    const response = await this.client.get<ApiResponse<SourceDto[]>>('/sources/active');
+    return response.data?.data || [];
+  }
 
-  createSource: async (sourceData: CreateSourceRequest): Promise<SourceDto> => {
-    const response = await api.post<ApiResponse<SourceDto>>('/sources', sourceData);
-    return response.data.data as SourceDto;
-  },
+  async createSource(sourceData: CreateSourceRequest): Promise<SourceDto> {
+    const response = await this.client.post<ApiResponse<SourceDto>>('/sources', sourceData);
+    return this.extractData(response);
+  }
 
-  updateSource: async (id: string, sourceData: UpdateSourceRequest): Promise<SourceDto> => {
-    const response = await api.put<ApiResponse<SourceDto>>(`/sources/${id}`, sourceData);
-    return response.data.data as SourceDto;
-  },
+  async updateSource(id: string, sourceData: UpdateSourceRequest): Promise<SourceDto> {
+    const response = await this.client.put<ApiResponse<SourceDto>>(`/sources/${id}`, sourceData);
+    return this.extractData(response);
+  }
 
-  toggleSourceActive: async (id: string): Promise<SourceDto> => {
-    const response = await api.put<ApiResponse<SourceDto>>(`/sources/${id}/toggle-active`);
-    return response.data.data as SourceDto;
-  },
+  async toggleSourceActive(id: string): Promise<SourceDto> {
+    const response = await this.client.put<ApiResponse<SourceDto>>(`/sources/${id}/toggle-active`);
+    return this.extractData(response);
+  }
 
-  // Scraper operations
-  triggerScraping: async (): Promise<{ [source: string]: number }> => {
-    const response = await api.post<ApiResponse<{ [source: string]: number }>>('/scraper/run');
-    return response.data.data || {};
-  },
+  // Scraper methods
+  async triggerScraping(): Promise<{ [source: string]: number }> {
+    const response = await this.client.post<ApiResponse<{ [source: string]: number }>>('/scraper/run');
+    return response.data?.data || {};
+  }
 
-  retryPendingArticles: async (): Promise<{ [source: string]: number }> => {
-    const response = await api.post<ApiResponse<{ [source: string]: number }>>('/scraper/re-run');
-    return response.data.data || {};
-  },
+  async retryPendingArticles(): Promise<{ [source: string]: number }> {
+    const response = await this.client.post<ApiResponse<{ [source: string]: number }>>('/scraper/re-run');
+    return response.data?.data || {};
+  }
 
-  // Get dashboard overview statistics
-  getDashboardStats: async (): Promise<DashboardStatsDto> => {
-    const response = await api.get<ApiResponse<DashboardStatsDto>>('/dashboard/stats');
-    return response.data.data || {
+  // Dashboard methods
+  async getDashboardStats(): Promise<DashboardStatsDto> {
+    const response = await this.client.get<ApiResponse<DashboardStatsDto>>('/dashboard/stats');
+    return this.extractData(response) || {
       totalArticles: 0,
       totalActiveSources: 0,
       articlesLast24Hours: 0,
-      lastScrapeTime: null
+      lastScrapeTime: null,
     };
-  },
-
-  // Get article trends by created date (scrape date)
-  getArticleTrendsByScrapedDate: async (timeRange: TimeRange = '7D'): Promise<ArticleTrendDto[]> => {
-    const response = await api.get<ApiResponse<ArticleTrendDto[]>>(`/dashboard/trends/scraped?range=${timeRange}`);
-    return response.data.data || [];
-  },
-
-  // Get article trends by publication date
-  getArticleTrendsByPublishedDate: async (timeRange: TimeRange = '7D'): Promise<ArticleTrendDto[]> => {
-    const response = await api.get<ApiResponse<ArticleTrendDto[]>>(`/dashboard/trends/published?range=${timeRange}`);
-    return response.data.data || [];
-  },
-
-  // Get source health information
-  getSourceHealth: async (): Promise<SourceHealthDto[]> => {
-    const response = await api.get<ApiResponse<SourceHealthDto[]>>('/dashboard/sources/health');
-    return response.data.data || [];
-  },
-
-  // Get recent activities
-  getRecentActivities: async (limit: number = 5): Promise<RecentActivityDto[]> => {
-    const response = await api.get<ApiResponse<RecentActivityDto[]>>(`/dashboard/activities?limit=${limit}`);
-    return response.data.data || [];
-  },
-
-  // Get recently scraped articles
-  getRecentArticles: async (limit: number = 5): Promise<ArticleDto[]> => {
-    const response = await api.get<ApiResponse<ArticleDto[]>>(`/dashboard/articles/recent?limit=${limit}`);
-    return response.data.data || [];
   }
-};
 
+  async getArticleTrendsByScrapedDate(timeRange: TimeRange = '7D'): Promise<ArticleTrendDto[]> {
+    const response = await this.client.get<ApiResponse<ArticleTrendDto[]>>(
+      `/dashboard/trends/scraped?range=${timeRange}`
+    );
+    return response.data?.data || [];
+  }
+
+  async getArticleTrendsByPublishedDate(timeRange: TimeRange = '7D'): Promise<ArticleTrendDto[]> {
+    const response = await this.client.get<ApiResponse<ArticleTrendDto[]>>(
+      `/dashboard/trends/published?range=${timeRange}`
+    );
+    return response.data?.data || [];
+  }
+
+  async getSourceHealth(): Promise<SourceHealthDto[]> {
+    const response = await this.client.get<ApiResponse<SourceHealthDto[]>>('/dashboard/sources/health');
+    return response.data?.data || [];
+  }
+
+  async getRecentActivities(limit: number = 5): Promise<RecentActivityDto[]> {
+    const response = await this.client.get<ApiResponse<RecentActivityDto[]>>(
+      `/dashboard/activities?limit=${limit}`
+    );
+    return response.data?.data || [];
+  }
+
+  async getRecentArticles(limit: number = 5): Promise<ArticleDto[]> {
+    const response = await this.client.get<ApiResponse<ArticleDto[]>>(
+      `/dashboard/articles/recent?limit=${limit}`
+    );
+    return response.data?.data || [];
+  }
+}
+
+const apiService = new ApiService();
 export default apiService;

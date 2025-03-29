@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.rometools.rome.feed.synd.SyndEntry
 import com.rometools.rome.feed.synd.SyndFeed
 import com.rometools.rome.io.SyndFeedInput
-import io.content.scraper.constant.KafkaTopics.CONTENT_TO_SCRAPE
+import io.content.scraper.constants.KafkaTopics.CONTENT_TO_SCRAPE
 import io.content.scraper.enums.ArticleStatus
 import io.content.scraper.models.Article
 import io.content.scraper.models.KafkaMessage
@@ -20,12 +20,14 @@ import org.springframework.stereotype.Service
 import org.springframework.web.reactive.function.client.WebClient
 import java.io.StringReader
 import java.time.Duration
+import java.time.LocalDateTime
 import java.time.ZoneId
 
 @Service
 class CollectorService(
     private val sourceRepository: SourceRepository,
     private val articleRepository: ArticleRepository,
+    private val activityService: ActivityService,
     private val applicationScope: CoroutineScope,
     private val objectMapper: ObjectMapper,
     private val kafkaTemplate: KafkaTemplate<String, String>,
@@ -47,7 +49,13 @@ class CollectorService(
                     val count = processFeed(source, feed)
                     articleCountsBySource[source.name] = count
                 }
+                sourceRepository.save(source.copy(lastScraped = LocalDateTime.now()))
             }
+            activityService.logActivity(
+                action = "SCRAPE",
+                status = "SUCCESS",
+                details = "Scraped ${articleCountsBySource.values.sum()} articles from ${articleCountsBySource.size} sources",
+            )
             logger.debug { "Scraping job completed" }
             articleCountsBySource
         }
@@ -150,21 +158,39 @@ class CollectorService(
 
         val countBySource = mutableMapOf<String, Int>()
 
-        pendingArticles.forEach { article ->
-            val sourceName = article.source.name
-            countBySource[sourceName] = countBySource.getOrDefault(sourceName, 0) + 1
+        try {
+            pendingArticles.forEach { article ->
+                val sourceName = article.source.name
+                countBySource[sourceName] = countBySource.getOrDefault(sourceName, 0) + 1
 
-            val parserConfig = article.source.parserConfig
-            val parsingStrategy = parserConfig?.name ?: article.source.parsingStrategy
+                val parserConfig = article.source.parserConfig
+                val parsingStrategy = parserConfig?.name ?: article.source.parsingStrategy
 
-            val kafkaMessage = KafkaMessage(article.id, article.url, parsingStrategy)
-            kafkaTemplate.send(
-                CONTENT_TO_SCRAPE,
-                article.id.toString(),
-                objectMapper.writeValueAsString(kafkaMessage),
+                val kafkaMessage = KafkaMessage(article.id, article.url, parsingStrategy)
+                kafkaTemplate.send(
+                    CONTENT_TO_SCRAPE,
+                    article.id.toString(),
+                    objectMapper.writeValueAsString(kafkaMessage),
+                )
+
+                logger.debug { "Pushed article ${article.id} to Kafka" }
+            }
+
+            activityService.logActivity(
+                action = "RETRY_SCRAPE",
+                status = "SUCCESS",
+                details = "Successfully retried ${pendingArticles.size} pending articles",
+            )
+        } catch (e: Exception) {
+            logger.error(e) { "Error retrying pending articles" }
+
+            activityService.logActivity(
+                action = "RETRY_SCRAPE",
+                status = "FAILED",
+                details = "Failed to retry pending articles: ${e.message}",
             )
 
-            logger.debug { "Pushed article ${article.id} to Kafka" }
+            throw e
         }
 
         return countBySource

@@ -38,7 +38,6 @@ export const useScraperStatistics = () => {
   const fetchStatisticsData = useCallback(async () => {
     try {
       setLoading(true);
-      // Mock API call
       await new Promise(resolve => setTimeout(resolve, 1200));
 
       setOverallStats({
@@ -108,17 +107,11 @@ export const useScraperStatistics = () => {
   }, [dateRange, generateDateRangeStats]);
 
   useEffect(() => {
-    // Define the function directly without storing it in a variable
-    // This way we don't create a Promise that we then ignore
     (function () {
-      // Use the non-async IIFE pattern
       fetchStatisticsData().catch(err => {
         console.error('Error in fetchStatisticsData:', err);
       });
     })();
-
-    // Optional: Return a cleanup function if needed
-    // return () => { /* cleanup code */ };
   }, [fetchStatisticsData]);
 
   useEffect(() => {

@@ -15,6 +15,8 @@ import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 import java.util.UUID
 
+private const val INVALID_SOURCE_ID_FORMAT = "Invalid source ID format"
+
 @RestController
 @RequestMapping("/api/sources")
 class SourceController(
@@ -49,7 +51,7 @@ class SourceController(
                 try {
                     UUID.fromString(id)
                 } catch (e: IllegalArgumentException) {
-                    return ApiResponse.error("Invalid source ID format")
+                    return ApiResponse.error(INVALID_SOURCE_ID_FORMAT)
                 }
 
             return sourceRepository
@@ -118,7 +120,7 @@ class SourceController(
                 try {
                     UUID.fromString(id)
                 } catch (e: IllegalArgumentException) {
-                    return ApiResponse.error("Invalid source ID format")
+                    return ApiResponse.error(INVALID_SOURCE_ID_FORMAT)
                 }
 
             val existingSource =
@@ -154,7 +156,7 @@ class SourceController(
                 try {
                     UUID.fromString(id)
                 } catch (e: IllegalArgumentException) {
-                    return ApiResponse.error("Invalid source ID format")
+                    return ApiResponse.error(INVALID_SOURCE_ID_FORMAT)
                 }
 
             val existingSource =

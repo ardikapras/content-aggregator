@@ -17,26 +17,34 @@ const useArticles = () => {
   const [filteredArticles, setFilteredArticles] = useState<ArticleDto[]>([]);
 
   useEffect(() => {
-    const fetchArticles = async () => {
-      try {
-        setLoading(true);
-        const result = await apiService.getArticles(currentPage, pageSize);
-        setArticles(result.items);
-        setFilteredArticles(result.items);
-        setTotalArticles(result.total);
-        setError(null);
-      } catch (err) {
-        setError('Failed to load articles');
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    };
+    setLoading(true);
 
-    fetchArticles();
+    const controller = new AbortController();
+
+    (async () => {
+      try {
+        const result = await apiService.getArticles(currentPage, pageSize);
+        if (!controller.signal.aborted) {
+          setArticles(result.items);
+          setFilteredArticles(result.items);
+          setTotalArticles(result.total);
+          setError(null);
+        }
+      } catch (err) {
+        if (!controller.signal.aborted) {
+          setError('Failed to load articles');
+          console.error(err);
+        }
+      } finally {
+        if (!controller.signal.aborted) {
+          setLoading(false);
+        }
+      }
+    })();
+
+    return () => controller.abort();
   }, [currentPage, pageSize]);
 
-  // Filter articles based on search term
   useEffect(() => {
     if (searchTerm) {
       const filtered = articles.filter(
@@ -58,7 +66,7 @@ const useArticles = () => {
 
   const handlePageSizeChange = (newSize: number) => {
     setPageSize(newSize);
-    setCurrentPage(0); // Reset to first page when changing page size
+    setCurrentPage(0);
   };
 
   const handleSearchChange = (term: string) => {
