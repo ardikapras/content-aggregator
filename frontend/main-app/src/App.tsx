@@ -1,97 +1,100 @@
-import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
-import { useState } from 'react';
-import { Container, Navbar, Nav, Button, Alert, Spinner } from 'react-bootstrap';
-import ArticleList from './components/ArticleList';
-import SourceList from './components/SourceList';
-import apiService from './services/Api';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { Alert } from 'react-bootstrap';
 import 'bootstrap/dist/css/bootstrap.min.css';
+import './custom.css';
 
-function App() {
-    const [scraperStatus, setScraperStatus] = useState<{
-        loading: boolean;
-        message: string | null;
-    }>({
+import Layout from './components/Layout';
+import Dashboard from './components/Dashboard.tsx';
+import Articles from './components/Articles.tsx';
+import SourceList from './components/SourceList';
+import ParserConfigurations from './components/ParserConfigurations';
+import ScraperStatistics from './components/ScraperStatistics';
+import apiService from './services/Api';
+
+const App = () => {
+  const [scraperStatus, setScraperStatus] = useState<{
+    loading: boolean;
+    message: string | null;
+    error: boolean;
+  }>({
+    loading: false,
+    message: null,
+    error: false,
+  });
+
+  // Handle scraper run action
+  const handleRunScraper = async () => {
+    try {
+      setScraperStatus({ loading: true, message: 'Running scraper...', error: false });
+
+      const result = await apiService.triggerScraping();
+
+      // Calculate total articles scraped
+      const totalScraped = Object.values(result).reduce((sum, count) => sum + count, 0);
+      const sourceCount = Object.keys(result).length;
+
+      setScraperStatus({
         loading: false,
-        message: null,
-    });
+        message: `Successfully scraped ${totalScraped} articles from ${sourceCount} sources.`,
+        error: false,
+      });
 
-    const handleTriggerScraper = async () => {
-        try {
-            setScraperStatus({ loading: true, message: null });
-            const result = await apiService.triggerScraping();
+      // Clear status message after 5 seconds
+      setTimeout(() => {
+        setScraperStatus(prev => ({ ...prev, message: null }));
+      }, 5000);
+    } catch (error) {
+      console.error('Error triggering scraper:', error);
+      setScraperStatus({
+        loading: false,
+        message: 'Failed to trigger scraper. Please try again.',
+        error: true,
+      });
+    }
+  };
 
-            // Calculate total articles scraped
-            const totalScraped = Object.values(result).reduce((sum, count) => sum + count, 0);
-
-            setScraperStatus({
-                loading: false,
-                message: `Successfully scraped ${totalScraped} articles from ${Object.keys(result).length} sources.`
-            });
-        } catch (error) {
-            setScraperStatus({
-                loading: false,
-                message: 'Failed to trigger scraper. Please try again.'
-            });
-        }
+  // Listen for the run scraper route
+  useEffect(() => {
+    const handleRouteChange = () => {
+      if (window.location.pathname === '/scraper/run') {
+        handleRunScraper();
+      }
     };
 
-    return (
-        <Router>
-            <div className="d-flex flex-column min-vh-100">
-                <Navbar bg="dark" variant="dark" expand="lg">
-                    <Container>
-                        <Navbar.Brand as={Link} to="/">Content Aggregator</Navbar.Brand>
-                        <Navbar.Toggle aria-controls="basic-navbar-nav" />
-                        <Navbar.Collapse id="basic-navbar-nav">
-                            <Nav className="me-auto">
-                                <Nav.Link as={Link} to="/">Articles</Nav.Link>
-                                <Nav.Link as={Link} to="/sources">Sources</Nav.Link>
-                            </Nav>
-                            <Button
-                                variant="primary"
-                                onClick={handleTriggerScraper}
-                                disabled={scraperStatus.loading}
-                            >
-                                {scraperStatus.loading ? (
-                                    <>
-                                        <Spinner
-                                            as="span"
-                                            animation="border"
-                                            size="sm"
-                                            role="status"
-                                            aria-hidden="true"
-                                        />
-                                        <span className="ms-2">Running Scraper...</span>
-                                    </>
-                                ) : 'Run Scraper'}
-                            </Button>
-                        </Navbar.Collapse>
-                    </Container>
-                </Navbar>
+    // Check on initial load
+    handleRouteChange();
 
-                {scraperStatus.message && (
-                    <Container className="mt-3">
-                        <Alert variant="info">
-                            {scraperStatus.message}
-                        </Alert>
-                    </Container>
-                )}
+    // Could add a more sophisticated router listener here if needed
+  }, []);
 
-                <Container className="py-4 flex-grow-1">
-                    <Routes>
-                        <Route path="/" element={<ArticleList />} />
-                        <Route path="/sources" element={<SourceList />} />
-                    </Routes>
-                </Container>
+  return (
+    <Router>
+      {scraperStatus.message && (
+        <Alert
+          variant={scraperStatus.error ? 'danger' : 'info'}
+          className="m-3 position-fixed top-0 end-0 shadow-sm"
+          style={{ zIndex: 1050, maxWidth: '400px' }}
+          dismissible
+          onClose={() => setScraperStatus(prev => ({ ...prev, message: null }))}
+        >
+          {scraperStatus.message}
+        </Alert>
+      )}
 
-                <footer className="py-3 bg-dark text-white mt-auto">
-                    <Container className="text-center">
-                        <p className="mb-0">Content Aggregator © {new Date().getFullYear()}</p>
-                    </Container>
-                </footer>
-            </div>
-        </Router>
-    );
-}
+      <Layout onRunScraper={handleRunScraper} isScraperRunning={scraperStatus.loading}>
+        <Routes>
+          <Route path="/" element={<Dashboard />} />
+          <Route path="/articles" element={<Articles />} />
+          <Route path="/sources" element={<SourceList />} />
+          <Route path="/parsers" element={<ParserConfigurations />} />
+          <Route path="/stats" element={<ScraperStatistics />} />
+          <Route path="/scraper/run" element={<Navigate to="/" />} /> {}
+          <Route path="*" element={<Navigate to="/" />} />
+        </Routes>
+      </Layout>
+    </Router>
+  );
+};
 
 export default App;

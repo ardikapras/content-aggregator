@@ -21,3 +21,29 @@ tasks.register<com.github.gradle.node.npm.task.NpmTask>("runDev") {
     dependsOn("install")
     args.set(listOf("run", "dev"))
 }
+
+// Linting and formatting tasks
+tasks.register<com.github.gradle.node.npm.task.NpmTask>("lint") {
+    dependsOn("install")
+    args.set(listOf("run", "lint"))
+}
+
+tasks.register<com.github.gradle.node.npm.task.NpmTask>("lintFix") {
+    dependsOn("install")
+    args.set(listOf("run", "lint:fix"))
+}
+
+tasks.register<com.github.gradle.node.npm.task.NpmTask>("format") {
+    dependsOn("install")
+    args.set(listOf("run", "format"))
+}
+
+tasks.register<com.github.gradle.node.npm.task.NpmTask>("checkFormat") {
+    dependsOn("install")
+    args.set(listOf("run", "check-format"))
+}
+
+tasks.register<com.github.gradle.node.npm.task.NpmTask>("validate") {
+    dependsOn("install")
+    args.set(listOf("run", "validate"))
+}
