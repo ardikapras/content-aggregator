@@ -8,14 +8,100 @@
 
 /* Adjust card heights */
 .card {
-    transition: transform 0.2s ease;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .card:hover {
-    transform: translateY(-5px);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1) !important;
 }
 
 /* Add some spacing in the main container */
 .container.py-4 {
     min-height: 80vh;
+}
+
+/* Sidebar navigation styles */
+.nav-link {
+    color: #495057;
+    border-radius: 0.25rem;
+    margin-bottom: 0.25rem;
+}
+
+.nav-link:hover {
+    background-color: rgba(0, 0, 0, 0.05);
+}
+
+.nav-link.active {
+    color: #0d6efd;
+    background-color: rgba(13, 110, 253, 0.1);
+    font-weight: 500;
+}
+
+/* Dashboard card styles */
+.dashboard .card .card-header {
+    background-color: rgba(0, 0, 0, 0.03);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.125);
+    padding: 0.75rem 1rem;
+}
+
+.dashboard .card .card-title {
+    margin-bottom: 0;
+    font-size: 1rem;
+    font-weight: 500;
+}
+
+.dashboard .display-4 {
+    font-size: 2.5rem;
+    font-weight: 600;
+    color: #0d6efd;
+}
+
+/* Table improvements */
+.table tbody tr:hover {
+    background-color: rgba(0, 0, 0, 0.02);
+}
+
+/* Status badge colors */
+.badge.bg-success {
+    background-color: #198754 !important;
+}
+
+.badge.bg-warning {
+    background-color: #ffc107 !important;
+    color: #212529 !important;
+}
+
+.badge.bg-danger {
+    background-color: #dc3545 !important;
+}
+
+.badge.bg-secondary {
+    background-color: #6c757d !important;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+}
+
+/* Media queries for responsive design */
+@media (max-width: 992px) {
+    .dashboard .display-4 {
+        font-size: 2rem;
+    }
 }

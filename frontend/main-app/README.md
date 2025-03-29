@@ -28,7 +28,7 @@ main-app/
 ├── public/              # Static assets
 ├── src/
 │   ├── components/      # React components
-│   │   ├── ArticleList.tsx     # Article listing component
+│   │   ├── Articles.tsx     # Article listing component
 │   │   └── SourceList.tsx      # Source management component
 │   ├── services/        # API services
 │   │   └── Api.ts       # API client using Axios
@@ -115,7 +115,7 @@ The main application component that handles:
 - Scraper operation triggering
 - Overall layout structure
 
-### ArticleList.tsx
+### Articles.tsx
 
 Displays articles with features:
 - Pagination
