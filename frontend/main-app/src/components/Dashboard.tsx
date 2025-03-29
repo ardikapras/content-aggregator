@@ -23,7 +23,6 @@ const Dashboard: FC = () => {
     refresh,
   } = useDashboardData();
 
-  // Show initial loading for the entire dashboard
   if ((loading.stats || loading.sourceHealth || loading.activities || loading.articles) && !stats) {
     return (
       <div className="text-center p-5">
@@ -35,7 +34,6 @@ const Dashboard: FC = () => {
     );
   }
 
-  // Show error state
   if (error) {
     return (
       <Alert variant="danger">

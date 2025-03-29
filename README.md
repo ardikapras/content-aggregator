@@ -42,7 +42,7 @@ The easiest way to run the complete system is with Docker Compose:
 
 ```bash
 # Clone the repository
-git clone https://github.com/your-org/content-aggregator.git
+git clone https://github.com/ardikapras/content-aggregator.git
 cd content-aggregator
 
 # Start all services

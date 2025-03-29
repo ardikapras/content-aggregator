@@ -93,8 +93,6 @@ const ArticleTrendChart: FC<ArticleTrendChartProps> = ({ trendData }) => {
       const gradient = createGradientBackground(chart.ctx, chart.chartArea);
 
       if (chart.data.datasets[0]) {
-        // Fix the type issue with backgroundColor
-        // Cast to a more specific type with backgroundColor property
         const dataset = chart.data.datasets[0] as {
           backgroundColor: string | CanvasGradient;
         };

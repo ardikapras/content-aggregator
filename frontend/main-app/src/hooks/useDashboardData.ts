@@ -161,7 +161,6 @@ const useDashboardData = (): DashboardDataHook => {
     }
   }, [selectedTimeRange]);
 
-  // Initial data loading
   useEffect(() => {
     void refreshStats();
     void refreshSourceHealth();
@@ -169,7 +168,6 @@ const useDashboardData = (): DashboardDataHook => {
     void refreshArticles();
   }, [refreshStats, refreshSourceHealth, refreshActivities, refreshArticles]);
 
-  // Only refresh trend data when timeRange changes
   useEffect(() => {
     void refreshTrends();
   }, [selectedTimeRange, refreshTrends]);
