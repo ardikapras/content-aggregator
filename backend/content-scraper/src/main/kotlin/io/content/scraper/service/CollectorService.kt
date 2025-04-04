@@ -153,8 +153,8 @@ class CollectorService(
      */
     fun retryPendingArticles(): Map<String, Int> {
         val pendingArticles =
-            articleRepository.findByStatusAndRetryCountLessThan(
-                ArticleStatus.DISCOVERED.name,
+            articleRepository.findByStatusInAndRetryCountLessThan(
+                listOf(ArticleStatus.DISCOVERED.name, ArticleStatus.ERROR_SCRAPE.name),
                 maxRetryCount,
             )
 

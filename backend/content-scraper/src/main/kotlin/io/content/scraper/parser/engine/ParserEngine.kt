@@ -20,7 +20,6 @@ class ParserEngine(
      */
     fun parse(document: Document): ProcessingResult<Map<String, String>, String> =
         try {
-            cleanDocument(document)
             val author = extractAuthor(document)
             val initialContent = extractContent(document)
             var content = initialContent
@@ -75,8 +74,9 @@ class ParserEngine(
     /**
      * Extract content using configured selectors
      */
-    private fun extractContent(document: Document): String =
-        config.contentSelectors
+    private fun extractContent(document: Document): String {
+        cleanDocument(document)
+        return config.contentSelectors
             .asSequence()
             .mapNotNull { selector ->
                 runCatching {
@@ -93,6 +93,7 @@ class ParserEngine(
                     }
                 }.getOrNull()
             }.firstOrNull() ?: ""
+    }
 
     /**
      * Handle multi-page content extraction
@@ -133,7 +134,6 @@ class ParserEngine(
 
                 logger.debug { "Fetching next page: $nextPageUrl" }
                 val nextPageDoc = Jsoup.connect(nextPageUrl).get()
-                cleanDocument(nextPageDoc)
                 val nextPageContent = extractContent(nextPageDoc)
 
                 if (nextPageContent.isBlank()) {
