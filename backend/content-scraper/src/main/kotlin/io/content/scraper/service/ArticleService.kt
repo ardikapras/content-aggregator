@@ -20,6 +20,7 @@ interface ArticleService {
     fun findArticles(
         searchTerm: String?,
         sourceName: String?,
+        status: String?,
         fromDate: LocalDate?,
         toDate: LocalDate?,
         pageable: Pageable,

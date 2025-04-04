@@ -10,7 +10,8 @@ const useArticles = (
   sortDirection: string = 'DESC',
   filterSource: string = '',
   dateRange: { from: string; to: string } = { from: '', to: '' },
-  searchTerm: string = ''
+  searchTerm: string = '',
+  filterStatus: string = ''
 ) => {
   const [articles, setArticles] = useState<ArticleDto[]>([]);
   const [sources, setSources] = useState<string[]>([]);
@@ -33,7 +34,8 @@ const useArticles = (
         searchTerm,
         filterSource,
         dateRange.from,
-        dateRange.to
+        dateRange.to,
+        filterStatus
       );
 
       setArticles(result.items);
@@ -61,6 +63,7 @@ const useArticles = (
     filterSource,
     dateRange,
     sources.length,
+    filterStatus,
   ]);
 
   useEffect(() => {

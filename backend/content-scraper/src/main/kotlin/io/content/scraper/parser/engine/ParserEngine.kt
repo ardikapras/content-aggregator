@@ -80,13 +80,17 @@ class ParserEngine(
             .asSequence()
             .mapNotNull { selector ->
                 runCatching {
-                    document
-                        .select(selector)
-                        .takeIf { it.isNotEmpty() }
-                        ?.map { it.text().trim() }
-                        ?.filter { it.isNotBlank() }
-                        ?.takeIf { it.isNotEmpty() }
-                        ?.joinToString("\n\n")
+                    val elements = document.select(selector)
+                    if (elements.isNotEmpty()) {
+                        elements
+                            .map {
+                                it.outerHtml()
+                            }.filter { it.isNotBlank() }
+                            .takeIf { it.isNotEmpty() }
+                            ?.joinToString("\n\n")
+                    } else {
+                        null
+                    }
                 }.getOrNull()
             }.firstOrNull() ?: ""
 

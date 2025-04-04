@@ -1,7 +1,7 @@
 import { FC } from 'react';
 import { Table, Badge, Button } from 'react-bootstrap';
 import { ArticleDto } from '../../services/Api.ts';
-import { getSentimentVariant, formatDate } from '../../utils/articleUtils.ts';
+import { formatDate, getStatusBadge } from '../../utils/articleUtils.ts';
 import { Eye, ArrowSquareOut } from 'phosphor-react';
 
 interface ArticlesTableProps {
@@ -28,7 +28,7 @@ const ArticlesTable: FC<ArticlesTableProps> = ({ articles, onShowDetail }) => {
           <th style={{ width: '15%' }}>Source</th>
           <th style={{ width: '15%' }}>Author</th>
           <th style={{ width: '15%' }}>Published</th>
-          <th style={{ width: '10%' }}>Sentiment</th>
+          <th style={{ width: '10%' }}>Status</th>
           <th style={{ width: '10%' }} className="text-center">
             Actions
           </th>
@@ -60,10 +60,10 @@ const ArticlesTable: FC<ArticlesTableProps> = ({ articles, onShowDetail }) => {
                 <span className="text-muted">Unknown</span>
               )}
             </td>
-            <td className="text-center">
-              {article.sentimentLabel ? (
-                <Badge bg={getSentimentVariant(article.sentiment)} style={{ minWidth: '70px' }}>
-                  {article.sentimentLabel}
+            <td>
+              {article.status ? (
+                <Badge bg={getStatusBadge(article.status)} style={{ minWidth: '70px' }}>
+                  {article.status}
                 </Badge>
               ) : (
                 <Badge bg="secondary" style={{ minWidth: '70px' }}>
