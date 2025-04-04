@@ -6,7 +6,6 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
-import java.util.regex.Pattern
 
 /**
  * The core parser engine that extracts content based on parser configurations
@@ -15,7 +14,6 @@ class ParserEngine(
     private val config: ParserConfig,
 ) {
     private val logger = KotlinLogging.logger {}
-    private val contentFiltersPatterns = config.contentFilters.map { Pattern.compile(it) }
 
     /**
      * Parse a document using the configuration
@@ -31,12 +29,7 @@ class ParserEngine(
                 content = extractMultiPageContent(document, initialContent)
             }
 
-            ProcessingResult.success(
-                mapOf(
-                    "author" to author,
-                    "content" to content,
-                ),
-            )
+            ProcessingResult.success(mapOf("author" to author, "content" to content))
         } catch (e: Exception) {
             logger.error(e) { "Error parsing document: ${e.message}" }
             ProcessingResult.failure("Failed to parse document: ${e.message}")
@@ -57,22 +50,19 @@ class ParserEngine(
                     if (author.isNotBlank()) {
                         return author
                     }
-                } else {
-                    val elements = document.select(selector)
-                    if (elements.isNotEmpty()) {
-                        val authorElement = elements.first() ?: continue
-                        if (authorElement.tagName() == "meta") {
-                            val content = authorElement.attr("content")
-                            if (content.isNotBlank()) {
-                                return content.trim()
-                            }
-                        } else {
-                            val text = authorElement.text()
-                            if (text.isNotBlank()) {
-                                return text.trim()
-                            }
-                        }
+                    continue
+                }
+
+                val element = document.select(selector).firstOrNull() ?: continue
+
+                val authorText =
+                    when (element.tagName()) {
+                        "meta" -> element.attr("content")
+                        else -> element.text()
                     }
+
+                if (authorText.isNotBlank()) {
+                    return authorText.trim()
                 }
             } catch (e: Exception) {
                 logger.debug { "Error extracting author with selector $selector: ${e.message}" }
@@ -85,32 +75,20 @@ class ParserEngine(
     /**
      * Extract content using configured selectors
      */
-    fun extractContent(document: Document): String {
-        if (config.contentSelectors.isEmpty()) {
-            return ""
-        }
-
-        for (selector in config.contentSelectors) {
-            try {
-                val elements = document.select(selector)
-                if (elements.isNotEmpty()) {
-                    val paragraphs =
-                        elements
-                            .map { it.text().trim() }
-                            .filter { it.isNotBlank() }
-                            .filter { content -> !isFiltered(content) }
-
-                    if (paragraphs.isNotEmpty()) {
-                        return paragraphs.joinToString("\n\n")
-                    }
-                }
-            } catch (e: Exception) {
-                logger.debug { "Error extracting content with selector $selector: ${e.message}" }
-            }
-        }
-
-        return ""
-    }
+    private fun extractContent(document: Document): String =
+        config.contentSelectors
+            .asSequence()
+            .mapNotNull { selector ->
+                runCatching {
+                    document
+                        .select(selector)
+                        .takeIf { it.isNotEmpty() }
+                        ?.map { it.text().trim() }
+                        ?.filter { it.isNotBlank() }
+                        ?.takeIf { it.isNotEmpty() }
+                        ?.joinToString("\n\n")
+                }.getOrNull()
+            }.firstOrNull() ?: ""
 
     /**
      * Handle multi-page content extraction
@@ -121,36 +99,27 @@ class ParserEngine(
     ): String {
         val content = StringBuilder(initialContent)
         var currentDoc = document
-        var pageCount = 1
-        val maxPages = 10
 
-        while (pageCount < maxPages) {
-            try {
-                val nextPageElements = currentDoc.select(config.nextPageSelector!!)
-                if (nextPageElements.isEmpty()) {
-                    break
-                }
+        repeat(9) {
+            // Max pages is 10, but we already have the first page
+            val nextPageElements = currentDoc.select(config.nextPageSelector!!)
+            val nextPageElement = nextPageElements.firstOrNull() ?: return content.toString()
 
-                val nextPageElement = nextPageElements.first() ?: continue
-                val nextPageUrl = getAbsoluteUrl(nextPageElement, document.baseUri())
+            val nextPageUrl =
+                getAbsoluteUrl(nextPageElement, document.baseUri())
+                    .takeIf { it.isNotBlank() } ?: return content.toString()
 
-                if (nextPageUrl.isBlank()) {
-                    break
-                }
-
+            runCatching {
                 val nextPageDoc = Jsoup.connect(nextPageUrl).get()
-                val nextPageContent = extractContent(nextPageDoc)
-
-                if (nextPageContent.isBlank()) {
-                    break
-                }
+                val nextPageContent =
+                    extractContent(nextPageDoc)
+                        .takeIf { it.isNotBlank() } ?: return content.toString()
 
                 content.append("\n\n").append(nextPageContent)
                 currentDoc = nextPageDoc
-                pageCount++
-            } catch (e: Exception) {
-                logger.error { "Error fetching next page: ${e.message}" }
-                break
+            }.onFailure {
+                logger.error { "Error fetching next page: ${it.message}" }
+                return content.toString()
             }
         }
 
@@ -166,26 +135,21 @@ class ParserEngine(
     ): String {
         if (element.tagName() == "a") {
             val href = element.attr("href")
-            return if (href.startsWith("http")) {
-                href
-            } else {
-                val base = if (baseUri.endsWith("/")) baseUri else "$baseUri/"
-                if (href.startsWith("/")) {
+            return when {
+                href.startsWith("http") -> href
+                href.startsWith("/") -> {
                     val protocol = baseUri.substringBefore("://")
                     val domain = baseUri.substringAfter("://").substringBefore("/")
                     "$protocol://$domain$href"
-                } else {
+                }
+                else -> {
+                    val base = if (baseUri.endsWith("/")) baseUri else "$baseUri/"
                     "$base$href"
                 }
             }
         }
 
-        val anchor = element.select("a").firstOrNull()
-        if (anchor != null) {
-            return getAbsoluteUrl(anchor, baseUri)
-        }
-
-        return ""
+        return element.select("a").firstOrNull()?.let { getAbsoluteUrl(it, baseUri) } ?: ""
     }
 
     /**
@@ -212,33 +176,34 @@ class ParserEngine(
     }
 
     /**
-     * Check if content should be filtered out
-     */
-    private fun isFiltered(content: String): Boolean =
-        contentFiltersPatterns.any { pattern ->
-            pattern.matcher(content).find()
-        }
-
-    /**
-     * Clean document before extraction
+     * Clean document before extraction by applying content filters
      */
     private fun cleanDocument(document: Document) {
-        val commonElementsToRemove =
-            listOf(
-                "script",
-                "style",
-                "iframe",
-                "div[id*=div-gpt-ad]",
-                "ins.adsbygoogle",
-                ".advertisement",
-                ".ads",
-                ".share-buttons",
-                ".social-bar",
-                ".comments",
-            )
-
-        for (selector in commonElementsToRemove) {
+        listOf(
+            "script",
+            "style",
+            "iframe",
+            "div[id*=div-gpt-ad]",
+            "ins.adsbygoogle",
+            ".advertisement",
+            ".ads",
+            ".share-buttons",
+            ".social-bar",
+            ".comments",
+        ).forEach { selector ->
             document.select(selector).remove()
+        }
+
+        config.contentFilters.forEach { filter ->
+            val elements = document.select(filter)
+            when {
+                elements.isNotEmpty() -> elements.remove()
+                else ->
+                    document
+                        .select("p, div, span")
+                        .filter { element -> element.text().contains(filter) }
+                        .forEach { it.remove() }
+            }
         }
     }
 }
