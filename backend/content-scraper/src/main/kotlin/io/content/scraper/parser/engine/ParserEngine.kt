@@ -103,26 +103,47 @@ class ParserEngine(
     ): String {
         val content = StringBuilder(initialContent)
         var currentDoc = document
+        val baseUrl = document.baseUri()
+        val visitedUrls = mutableSetOf<String>()
+
+        // Add the initial page to visited URLs
+        visitedUrls.add(baseUrl)
 
         repeat(9) {
             // Max pages is 10, but we already have the first page
-            val nextPageElements = currentDoc.select(config.nextPageSelector!!)
-            val nextPageElement = nextPageElements.firstOrNull() ?: return content.toString()
+            try {
+                // Get all pagination links
+                val nextPageElements = currentDoc.select(config.nextPageSelector!!)
 
-            val nextPageUrl =
-                getAbsoluteUrl(nextPageElement, document.baseUri())
-                    .takeIf { it.isNotBlank() } ?: return content.toString()
+                // Find the next page link that we haven't visited yet
+                val nextPageElement =
+                    nextPageElements
+                        .firstOrNull { element ->
+                            val url = getAbsoluteUrl(element, currentDoc.baseUri())
+                            !visitedUrls.contains(url) && url.contains("page=")
+                        } ?: return content.toString()
 
-            runCatching {
+                val nextPageUrl = getAbsoluteUrl(nextPageElement, currentDoc.baseUri())
+                if (nextPageUrl.isBlank() || visitedUrls.contains(nextPageUrl)) {
+                    return content.toString()
+                }
+
+                // Mark this URL as visited
+                visitedUrls.add(nextPageUrl)
+
+                logger.debug { "Fetching next page: $nextPageUrl" }
                 val nextPageDoc = Jsoup.connect(nextPageUrl).get()
-                val nextPageContent =
-                    extractContent(nextPageDoc)
-                        .takeIf { it.isNotBlank() } ?: return content.toString()
+                cleanDocument(nextPageDoc)
+                val nextPageContent = extractContent(nextPageDoc)
+
+                if (nextPageContent.isBlank()) {
+                    return content.toString()
+                }
 
                 content.append("\n\n").append(nextPageContent)
                 currentDoc = nextPageDoc
-            }.onFailure {
-                logger.error { "Error fetching next page: ${it.message}" }
+            } catch (e: Exception) {
+                logger.error { "Error fetching next page: ${e.message}" }
                 return content.toString()
             }
         }
