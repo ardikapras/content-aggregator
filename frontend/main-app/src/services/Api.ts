@@ -15,6 +15,7 @@ export interface ArticleDto {
   readingTimeMinutes?: number;
   sentiment?: number;
   sentimentLabel?: string;
+  status: string;
 }
 
 export interface PageResponse<T> {
@@ -154,7 +155,8 @@ class ApiService {
     searchTerm = '',
     source = '',
     fromDate = '',
-    toDate = ''
+    toDate = '',
+    status = ''
   ): Promise<{ items: ArticleDto[]; total: number }> {
     const params = new URLSearchParams();
     params.append('page', page.toString());
@@ -176,6 +178,10 @@ class ApiService {
 
     if (toDate) {
       params.append('toDate', toDate);
+    }
+
+    if (status) {
+      params.append('status', status);
     }
 
     const response = await this.client.get<ApiResponse<PageResponse<ArticleDto>>>(

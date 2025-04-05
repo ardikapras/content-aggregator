@@ -34,13 +34,14 @@ class ArticleController(
         @RequestParam(defaultValue = "DESC") direction: String,
         @RequestParam(required = false) search: String?,
         @RequestParam(required = false) source: String?,
+        @RequestParam(required = false) status: String?,
         @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) fromDate: LocalDate?,
         @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) toDate: LocalDate?,
     ): ResponseEntity<ApiResponse<PageResponse<ArticleDto>>> {
         try {
-            logger.info {
+            logger.debug {
                 "Fetching articles with page=$page, size=$size, sortBy=$sortBy, direction=$direction, " +
-                    "search=$search, source=$source, fromDate=$fromDate, toDate=$toDate"
+                    "search=$search, source=$source, status=$status, fromDate=$fromDate, toDate=$toDate"
             }
 
             val sortDirection =
@@ -57,7 +58,7 @@ class ArticleController(
                     Sort.by(sortDirection, sortBy),
                 )
 
-            val articlePage = articleService.findArticles(search, source, fromDate, toDate, pageable)
+            val articlePage = articleService.findArticles(search, source, status, fromDate, toDate, pageable)
 
             val articleDtos = articlePage.content.map { ArticleDto.fromEntity(it) }
 

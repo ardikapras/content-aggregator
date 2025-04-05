@@ -8,10 +8,21 @@ import useDebounce from '../hooks/useDebounce';
 type SortField = 'publishDate' | 'title' | 'source';
 type SortDirection = 'ASC' | 'DESC';
 
+const statuses = [
+  'DISCOVERED',
+  'SCRAPED',
+  'ENRICHED',
+  'PROCESSED',
+  'ERROR_SCRAPE',
+  'ERROR_PROCESS',
+  'BLACKLISTED',
+];
+
 const Articles: FC = () => {
   const [sortField, setSortField] = useState<SortField>('publishDate');
   const [sortDirection, setSortDirection] = useState<SortDirection>('DESC');
   const [filterSource, setFilterSource] = useState<string>('');
+  const [filterStatus, setFilterStatus] = useState<string>('');
   const [searchInputValue, setSearchInputValue] = useState('');
   const debouncedSearchTerm = useDebounce(searchInputValue, 500); // 500ms debounce delay
   const [dateRange, setDateRange] = useState<{ from: string; to: string }>({
@@ -24,7 +35,8 @@ const Articles: FC = () => {
     sortDirection,
     filterSource,
     dateRange,
-    debouncedSearchTerm
+    debouncedSearchTerm,
+    filterStatus
   );
 
   const { showModal, selectedArticle, openModal, closeModal } = useArticleModal();
@@ -37,8 +49,12 @@ const Articles: FC = () => {
     setSearchInputValue(e.target.value);
   };
 
-  const handleFilterChange = (e: ChangeEvent<HTMLSelectElement>) => {
+  const handleFilterSourceChange = (e: ChangeEvent<HTMLSelectElement>) => {
     setFilterSource(e.target.value);
+  };
+
+  const handleFilterStatusChange = (e: ChangeEvent<HTMLSelectElement>) => {
+    setFilterStatus(e.target.value);
   };
 
   const handleDateChange = (e: ChangeEvent<HTMLInputElement>) => {
@@ -126,14 +142,27 @@ const Articles: FC = () => {
                 )}
               </Form.Group>
             </Col>
-            <Col md={4}>
+            <Col md={2}>
               <Form.Group>
                 <Form.Label>Source</Form.Label>
-                <Form.Select value={filterSource} onChange={handleFilterChange}>
+                <Form.Select value={filterSource} onChange={handleFilterSourceChange}>
                   <option value="">All Sources</option>
                   {sources.map(source => (
                     <option key={source} value={source}>
                       {source}
+                    </option>
+                  ))}
+                </Form.Select>
+              </Form.Group>
+            </Col>
+            <Col md={2}>
+              <Form.Group>
+                <Form.Label>Status</Form.Label>
+                <Form.Select value={filterStatus} onChange={handleFilterStatusChange}>
+                  <option value="">All Status</option>
+                  {statuses.map(status => (
+                    <option key={status} value={status}>
+                      {status}
                     </option>
                   ))}
                 </Form.Select>

@@ -232,6 +232,7 @@ const SourceList = () => {
                 <option value="CNBC">CNBC</option>
                 <option value="CNN">CNN</option>
                 <option value="JPNN">JPNN</option>
+                <option value="TRIBUNNEWS">Tribun News</option>
               </Form.Select>
             </Form.Group>
 
