@@ -1,0 +1,9 @@
+-- Set the schema
+SET search_path TO news, public;
+
+UPDATE news.parser_configs SET content_selectors = '{div.post-content p:not(:empty)}', content_filters = '{p:has(ins.adsbygoogle),ins.adsbygoogle,p:has(script),div[id*="aswift_"],.ads-container,div[class*="advert"],.social-share,.related-news,span.baca-juga,p:has(span.baca-juga),p.text-muted,p.small,p[class*="text-muted"]}' WHERE id = '2b852f78-e03f-4764-858f-6d1b66d861b4';
+UPDATE news.parser_configs SET content_selectors = '{.detail-wrap p:not(:empty)}', content_filters = '{div.paradetail,.paradetail,.para_caption}' WHERE id = '7098edda-9a37-4e54-8e9c-e96f929cbe83';
+UPDATE news.parser_configs SET content_selectors = ARRAY['div[itemprop=articleBody] p:not(:empty)'], next_page_selector = 'div.pagination a', content_filters = ARRAY['div.baca-juga', 'div[id*="browsi_ad"]', 'div[spottype="dynamic_mc"]', 'iframe', 'strong:contains(Kamu Sudah Menonton Video)'] WHERE id = '730c8461-9643-4a9a-a8ac-c2ebdf159939';
+UPDATE news.parser_configs SET content_selectors = '{.detail-text p:not(:empty)}', content_filters = '{.media-institusi}' WHERE id = '89cac3df-0e75-4a18-816e-8d2ad109ebe6';
+INSERT INTO news.parser_configs (id, name, description, author_selectors, content_selectors, next_page_selector, content_filters, created_at, updated_at) VALUES ('cd9eef3a-3aa5-460a-8418-e41a0d6adec3', 'TRIBUNNEWS', 'Parser configuration for Tribun News', '{script[type=application/ld+json]}', '{div.side-article p:not(:empty)}', 'div.paging a', '{p.baca,.paging a[href*=''page=all'']}', '2025-04-04 21:01:36.995638', '2025-04-04 21:01:37.010890');
+INSERT INTO news.sources (id, name, url, parsing_strategy, last_scraped, is_active, created_at, updated_at, parser_config_id) VALUES ('280ee584-caba-4946-9f8c-07666c3f73f3', 'Tribun News', 'https://www.tribunnews.com/rss', 'TRIBUNNEWS', '2025-04-05 17:13:44.847225', true, '2025-04-04 20:38:38.867027', '2025-04-05 17:13:44.847493', 'cd9eef3a-3aa5-460a-8418-e41a0d6adec3');

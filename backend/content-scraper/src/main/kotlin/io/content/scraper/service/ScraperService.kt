@@ -37,6 +37,7 @@ class ScraperService(
             .orElse(null)
             ?.let {
                 try {
+                    logger.debug { "Processing article: ${it.id}" }
                     val newsDocument = DocumentFactory.fromUrl(it.url)
 
                     val parserConfig = it.source.parserConfig
@@ -50,10 +51,12 @@ class ScraperService(
                     val parsedResult = parser.parse(newsDocument)
 
                     if (parsedResult.failure) {
+                        logger.error { "Error parsing article: ${it.id}" }
                         updateArticleWithError(it, parsedResult.failureValue)
                         return
                     }
 
+                    logger.debug { "Successfully parsed article: ${it.id}" }
                     articleRepository.save(
                         it.copy(
                             author = parsedResult.successValue["author"],

@@ -21,12 +21,11 @@ class ArticleServiceImpl(
     override fun findArticles(
         searchTerm: String?,
         sourceName: String?,
+        status: String?,
         fromDate: LocalDate?,
         toDate: LocalDate?,
         pageable: Pageable,
     ): Page<Article> {
-        logger.info { "Finding articles with searchTerm=$searchTerm, sourceName=$sourceName, fromDate=$fromDate, toDate=$toDate" }
-
         val spec =
             Specification<Article> { root, _, criteriaBuilder ->
                 val predicates = mutableListOf<Predicate>()
@@ -54,6 +53,12 @@ class ArticleServiceImpl(
                             root.join<Article, String>("source").get<String>("name"),
                             sourceName,
                         ),
+                    )
+                }
+
+                if (!status.isNullOrBlank()) {
+                    predicates.add(
+                        criteriaBuilder.equal(root.get<String>("status"), status),
                     )
                 }
 

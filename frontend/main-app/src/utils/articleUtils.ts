@@ -8,6 +8,13 @@ export const getSentimentVariant = (sentiment?: number): string => {
   return 'warning';
 };
 
+export const getStatusBadge = (status: string): string => {
+  if (['DISCOVERED'].includes(status)) return 'secondary';
+  if (['SCRAPED'].includes(status)) return 'success';
+  if (['ERROR_SCRAPE'].includes(status)) return 'danger';
+  return 'warning';
+};
+
 /**
  * Format date for display
  */

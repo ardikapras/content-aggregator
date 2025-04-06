@@ -141,6 +141,7 @@ data class ArticleDto(
     val readingTimeMinutes: Int?,
     val sentiment: Float?,
     val sentimentLabel: String?,
+    val status: String,
 ) {
     companion object {
         fun fromEntity(article: Article): ArticleDto =
@@ -157,6 +158,7 @@ data class ArticleDto(
                 readingTimeMinutes = article.readingTimeMinutes,
                 sentiment = article.sentiment,
                 sentimentLabel = getSentimentLabel(article.sentiment),
+                status = article.status,
             )
 
         private fun getSentimentLabel(sentiment: Float?): String? {
