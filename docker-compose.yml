@@ -21,25 +21,75 @@ services:
     networks:
       - backend
 
-  kafka:
-    container_name: content-aggregator-kafka
-    image: bitnami/kafka:latest
+  temporal:
+    container_name: content-aggregator-temporal
+    image: temporalio/auto-setup:latest
     ports:
-      - "9092:9092"
+      - "7233:7233"   # gRPC API
     environment:
-      # KRaft mode configuration
-      KAFKA_CFG_NODE_ID: 1
-      KAFKA_CFG_PROCESS_ROLES: broker,controller
-      KAFKA_CFG_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
-      KAFKA_CFG_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093
-      KAFKA_CFG_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
-      KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
-      KAFKA_CFG_CONTROLLER_LISTENER_NAMES: CONTROLLER
-      ALLOW_PLAINTEXT_LISTENER: yes
-      KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE: true
+      - DB=postgres12
+      - DB_PORT=5432
+      - POSTGRES_USER=postgres
+      - POSTGRES_PWD=postgres
+      - POSTGRES_SEEDS=postgres
+    networks:
+      - backend
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  temporal-ui:
+    container_name: content-aggregator-temporal-ui
+    image: temporalio/ui:latest
+    ports:
+      - "8081:8080"
+    environment:
+      - TEMPORAL_ADDRESS=temporal:7233
+      - TEMPORAL_CORS_ORIGINS=http://localhost:3000
+    networks:
+      - backend
+    depends_on:
+      - temporal
+
+  prometheus:
+    container_name: content-aggregator-prometheus
+    image: prom/prometheus:latest
+    ports:
+      - "9090:9090"
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-      - kafka_data:/bitnami/kafka
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--web.enable-lifecycle'
+      - '--web.enable-admin-api'
+    networks:
+      - backend
+
+  grafana:
+    container_name: content-aggregator-grafana
+    image: grafana/grafana:latest
+    ports:
+      - "3001:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards
+      - ./monitoring/grafana/datasources:/etc/grafana/provisioning/datasources
+    networks:
+      - backend
+    depends_on:
+      - prometheus
+
+  zipkin:
+    container_name: content-aggregator-zipkin
+    image: openzipkin/zipkin:latest
+    ports:
+      - "9411:9411"
     networks:
       - backend
 
@@ -48,4 +98,5 @@ networks:
 
 volumes:
   database:
-  kafka_data:
+  prometheus_data:
+  grafana_data:

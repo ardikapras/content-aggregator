@@ -20,8 +20,10 @@ spring:
     minimum-idle: 5
   lifecycle:
     timeout-per-shutdown-phase: 30s
-  kafka:
-    bootstrap-servers: ${SPRING_KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+  temporal:
+    connection:
+      target: 127.0.0.1:7233
+    namespace: default
 
 app:
   max-retry-count: ${APP_MAX_RETRY_COUNT:3}
@@ -52,3 +54,22 @@ management:
     metrics:
       export:
         enabled: true
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+    distribution:
+      percentiles-histogram:
+        "[http.server.requests]": true
+        "[temporal.activity.execution]": true
+        "[temporal.workflow.execution]": true
+      sla:
+        "[http.server.requests]": "50ms,100ms,200ms,300ms,500ms,1s,2s"
+    tags:
+      application: content-scraper
+      environment: ${SPRING_PROFILES_ACTIVE:development}
+  tracing:
+    sampling:
+      probability: 1.0
+    zipkin:
+      endpoint: ${ZIPKIN_ENDPOINT:http://localhost:9411/api/v2/spans}

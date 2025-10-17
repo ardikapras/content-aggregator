@@ -1,4 +1,4 @@
-@startuml "Content Scraper Flow"
+@startuml "Content Scraper Flow - Temporal Best Practices"
 
 ' Actors
 actor User
@@ -16,8 +16,37 @@ box "Backend" #LightYellow
   participant "News Strategy Manager" as StrategyManager
   participant "Configurable Parser Strategy" as ConfigurableStrategy
   participant "Collector Service" as CollectorService
-  participant "Scraper Service" as ScraperService
   database "Database" as DB
+end box
+
+box "Temporal Infrastructure - Hierarchical Design" #LightGreen
+  participant "Temporal Client" as TemporalClient
+  participant "Temporal Workflow Engine" as WorkflowEngine
+
+  box "Task Queues" #PaleGreen
+    participant "Daily Aggregation Queue" as DailyQueue
+    participant "Source Collection Queue" as SourceQueue
+    participant "Article Processing Queue" as ArticleQueue
+  end box
+
+  box "Level 1: Orchestrator" #LightCyan
+    participant "Daily Aggregation Workflow" as DailyWorkflow
+  end box
+
+  box "Level 2: Source Processing" #LightSalmon
+    participant "Source Collection Workflow" as SourceWorkflow
+  end box
+
+  box "Level 3: Article Processing" #LightYellow
+    participant "Article Processing Workflow" as ArticleWorkflow
+  end box
+
+  box "Activities by Domain" #Lavender
+    participant "Feed Activity" as FeedActivity
+    participant "Content Activity" as ContentActivity
+    participant "Data Activity" as DataActivity
+    participant "Analytics Activity" as AnalyticsActivity
+  end box
 end box
 
 ' Parser Configuration Flow
@@ -56,51 +85,156 @@ group "Parser Configuration Flow"
   APIService --> UI: Show success message
 end
 
-' Content Scraping Flow
-group "Content Scraping Flow"
-  Job -> CollectorService: Trigger scraping job
-  CollectorService -> DB: Fetch active sources
-  DB --> CollectorService: Return source list
+' Hierarchical Content Scraping Flow with Temporal
+group "Hierarchical Content Scraping Flow"
+  Job -> CollectorService: Trigger daily aggregation
+  CollectorService -> TemporalClient: Start Daily Aggregation Workflow
+  TemporalClient -> WorkflowEngine: Execute workflow
+  WorkflowEngine -> DailyWorkflow: Run daily aggregation
 
-  loop for each source
-    CollectorService -> CollectorService: Fetch RSS feed
-    CollectorService -> DB: Check for existing articles
-    CollectorService -> DB: Save new article entries
-    CollectorService -> ScraperService: Send to Kafka for processing
-  end
+  DailyWorkflow -> DataActivity: Get all active sources
+  DataActivity -> DB: Query active sources
+  DB --> DataActivity: Return source list
+  DataActivity --> DailyWorkflow: Return sources
 
-  ScraperService -> ScraperService: Consume from Kafka
-  ScraperService -> DB: Fetch article to process
-  ScraperService -> StrategyManager: getStrategy(parserConfig)
-  StrategyManager --> ScraperService: Return configured strategy
-  ScraperService -> ConfigurableStrategy: parse(document)
+  note right of DailyWorkflow
+    Parent workflow spawns child workflows
+    for each source in parallel (30+ sources)
+  end note
 
-  alt Multi-page article
-    ConfigurableStrategy -> ConfigurableStrategy: Extract content from first page
-    ConfigurableStrategy -> ConfigurableStrategy: Check for next page link
-    loop while next page exists
-      ConfigurableStrategy -> ConfigurableStrategy: Fetch next page
-      ConfigurableStrategy -> ConfigurableStrategy: Extract content and append
+  loop for each source (parallel execution)
+    DailyWorkflow -> WorkflowEngine: Spawn Source Collection Workflow
+    WorkflowEngine -> SourceWorkflow: Process single source
+
+    SourceWorkflow -> FeedActivity: Fetch RSS feed
+    FeedActivity -> StrategyManager: Get RSS parser
+    StrategyManager --> FeedActivity: Return RSS strategy
+    FeedActivity --> SourceWorkflow: Return feed content
+
+    SourceWorkflow -> FeedActivity: Extract article URLs
+    FeedActivity --> SourceWorkflow: Return article list
+
+    SourceWorkflow -> DataActivity: Check existing articles
+    DataActivity -> DB: Query existing URLs
+    DB --> DataActivity: Return existing articles
+    DataActivity --> SourceWorkflow: Return new articles only
+
+    SourceWorkflow -> DataActivity: Save new articles
+    DataActivity -> DB: Insert new article records
+    DataActivity --> SourceWorkflow: Return saved article IDs
+
+    note right of SourceWorkflow
+      Source workflow spawns child workflows
+      for each new article (parallel processing)
+    end note
+
+    loop for each new article (parallel execution)
+      SourceWorkflow -> WorkflowEngine: Spawn Article Processing Workflow
+      WorkflowEngine -> ArticleWorkflow: Process single article
+
+      ArticleWorkflow -> ContentActivity: Parse article content
+      ContentActivity -> StrategyManager: Get parsing strategy
+      StrategyManager --> ContentActivity: Return parser strategy
+      ContentActivity -> ConfigurableStrategy: Parse document
+      ConfigurableStrategy --> ContentActivity: Return parsed content
+
+      alt Multi-page article detected
+        ContentActivity -> ContentActivity: Process additional pages
+        loop while next page exists
+          ContentActivity -> ConfigurableStrategy: Parse next page
+          ConfigurableStrategy --> ContentActivity: Return page content
+        end
+        ContentActivity -> ContentActivity: Combine all pages
+      end
+
+      ContentActivity --> ArticleWorkflow: Return final content
+
+      ArticleWorkflow -> DataActivity: Save article content
+      DataActivity -> DB: Update article with content
+      DataActivity --> ArticleWorkflow: Confirm save
+
+      ArticleWorkflow -> AnalyticsActivity: Update article metrics
+      AnalyticsActivity -> DB: Update word count, reading time
+      AnalyticsActivity --> ArticleWorkflow: Confirm metrics
+
+      alt Processing failed
+        ArticleWorkflow -> WorkflowEngine: Apply retry policy
+        note right
+          Temporal handles:
+          - Exponential backoff per article
+          - Different retry strategies by error type
+          - Dead letter handling for failed articles
+        end note
+      end
+
+      ArticleWorkflow --> SourceWorkflow: Return processing result
     end
+
+    SourceWorkflow -> DataActivity: Update source last scraped
+    DataActivity -> DB: Update source timestamp
+    DataActivity --> SourceWorkflow: Confirm update
+
+    SourceWorkflow --> DailyWorkflow: Return source results
   end
 
-  ConfigurableStrategy --> ScraperService: Return parsed content
-  ScraperService -> DB: Update article with content
+  DailyWorkflow -> AnalyticsActivity: Generate aggregation summary
+  AnalyticsActivity -> DB: Calculate total metrics
+  AnalyticsActivity --> DailyWorkflow: Return summary
+
+  DailyWorkflow --> CollectorService: Return aggregation results
+  CollectorService --> Job: Complete with statistics
 end
 
-' User-triggered scraping
+' User-triggered scraping with Temporal
 group "Manual Scraping Flow"
   User -> UI: Click "Run Scraper" button
   UI -> APIService: Trigger scraping
   APIService -> Controller: POST /api/scraper/run
   Controller -> CollectorService: start()
   note right
-    This follows the same flow
-    as the scheduled job above
+    This follows the same Temporal workflow
+    flow as the scheduled job above
   end note
-  CollectorService --> Controller: Return scraping results
-  Controller --> APIService: Return results
-  APIService --> UI: Show scraping statistics
+  CollectorService --> Controller: Return workflow execution IDs
+  Controller --> APIService: Return workflow status
+  APIService --> UI: Show scraping statistics and workflow progress
+end
+
+' Retry Processing Flow with Temporal
+group "Retry Processing Flow"
+  User -> UI: Click "Retry Failed Articles" button
+  UI -> APIService: Trigger retry processing
+  APIService -> Controller: POST /api/scraper/re-run
+  Controller -> CollectorService: retryPendingArticles()
+  CollectorService -> DB: Find failed/pending articles
+  DB --> CollectorService: Return article list
+
+  loop for each failed article
+    CollectorService -> TemporalClient: Start Article Processing Workflow
+    TemporalClient -> WorkflowEngine: Execute retry workflow
+    WorkflowEngine -> ProcessingWorkflow: Execute with retry policy
+    note right
+      Temporal applies intelligent retry policies:
+      - Exponential backoff
+      - Different strategies for network vs parsing errors
+      - Maximum retry limits with dead letter handling
+    end note
+  end
+
+  CollectorService --> Controller: Return retry results
+  Controller --> APIService: Return retry statistics
+  APIService --> UI: Show retry progress and results
+end
+
+' Temporal Monitoring and Observability
+group "Temporal Monitoring"
+  User -> UI: Access workflow monitoring
+  UI -> APIService: Request workflow status
+  APIService -> TemporalClient: Query workflow executions
+  TemporalClient -> WorkflowEngine: Get workflow status
+  WorkflowEngine --> TemporalClient: Return execution details
+  TemporalClient --> APIService: Return workflow information
+  APIService --> UI: Display workflow progress, retries, and errors
 end
 
 @enduml

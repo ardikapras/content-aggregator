@@ -69,7 +69,7 @@ docker compose up -d
 
 2. Run the backend service:
 ```bash
-./gradlew backend:content-scraper:run
+./gradlew backend:content-scraper:bootRun
 ```
 
 Or just use the Gradle task:

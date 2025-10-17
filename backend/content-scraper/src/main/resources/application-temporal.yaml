@@ -1,0 +1,17 @@
+spring:
+  temporal:
+    connection:
+      target: 127.0.0.1:7233
+    namespace: default
+    workers:
+      - task-queue: CONTENT_COLLECTION_TASK_QUEUE
+        max-concurrent-activities: 5
+        max-concurrent-workflow-tasks: 5
+      - task-queue: ARTICLE_PROCESSING_TASK_QUEUE
+        max-concurrent-activities: 10
+        max-concurrent-workflow-tasks: 10
+
+logging:
+  level:
+    io.temporal: INFO
+    io.content.scraper.temporal: DEBUG

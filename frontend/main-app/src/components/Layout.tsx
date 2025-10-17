@@ -1,6 +1,6 @@
 import { FC } from 'react';
 import { Container } from 'react-bootstrap';
-import { MobileMenu, Sidebar, TopNavbar } from './layout';
+import { MobileMenu, Sidebar, TopNavbar } from './layout/index';
 import { useSidebar } from '../hooks';
 import { navigationItems } from '../config/navigationConfig';
 import { LayoutProps } from '../types/layoutTypes';

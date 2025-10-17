@@ -19,6 +19,8 @@ interface ArticleRepository :
     JpaSpecificationExecutor<Article> {
     fun findByUrl(url: String): Article?
 
+    fun existsByUrl(url: String): Boolean
+
     fun findByStatusInAndRetryCountLessThan(
         statuses: Collection<String>,
         maxRetryCount: Int,

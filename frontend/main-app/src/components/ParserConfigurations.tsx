@@ -1,7 +1,7 @@
 import { FC } from 'react';
 import { Card } from 'react-bootstrap';
 import { LoadingSpinner, ErrorMessage } from './common';
-import { ParserConfigTable, ParserConfigModal, ParserConfigHeader } from './parsers';
+import { ParserConfigTable, ParserConfigModal, ParserConfigHeader } from './parsers/index';
 import { useParserConfigurations } from '../hooks';
 
 const ParserConfigurations: FC = () => {

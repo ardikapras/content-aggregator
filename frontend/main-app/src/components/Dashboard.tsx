@@ -2,7 +2,7 @@ import { FC } from 'react';
 import { Alert, Button, Card, Container, Row, Col, Spinner, ButtonGroup } from 'react-bootstrap';
 import { RefreshCw } from 'lucide-react';
 import useDashboardData from '../hooks/useDashboardData';
-import { StatsCards, RecentActivity, SourceHealth, RecentArticles } from './dashboard';
+import { StatsCards, RecentActivity, SourceHealth, RecentArticles } from './dashboard/index';
 import { ArticleTrendChart } from './charts';
 import { TimeRange } from '../services/Api';
 

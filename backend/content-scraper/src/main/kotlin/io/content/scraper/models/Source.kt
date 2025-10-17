@@ -1,5 +1,6 @@
 package io.content.scraper.models
 
+import com.fasterxml.jackson.annotation.JsonAlias
 import io.content.scraper.enums.ParsingStrategy
 import jakarta.persistence.Entity
 import jakarta.persistence.FetchType
@@ -22,5 +23,6 @@ data class Source(
     @JoinColumn(name = "parser_config_id")
     val parserConfig: ParserConfig? = null,
     val lastScraped: LocalDateTime? = null,
+    @field:JsonAlias("active")
     val isActive: Boolean = true,
 )

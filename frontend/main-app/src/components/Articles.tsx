@@ -2,7 +2,7 @@ import { ChangeEvent, FC, useState } from 'react';
 import { Container, Row, Col, Card, Form, Button, InputGroup } from 'react-bootstrap';
 import { useArticles, useArticleModal } from '../hooks';
 import { LoadingSpinner, ErrorMessage } from './common';
-import { ArticleDetailModal, ArticlePagination, ArticlesTable } from './articles';
+import { ArticleDetailModal, ArticlePagination, ArticlesTable } from './articles/index';
 import useDebounce from '../hooks/useDebounce';
 
 type SortField = 'publishDate' | 'title' | 'source';

@@ -1,29 +1,22 @@
 package io.content.scraper.service
 
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.rometools.rome.feed.synd.SyndEntry
-import com.rometools.rome.feed.synd.SyndFeed
-import com.rometools.rome.io.SyndFeedInput
-import io.content.scraper.constants.KafkaTopics.CONTENT_TO_SCRAPE
 import io.content.scraper.enums.ActivityLogAction
 import io.content.scraper.enums.ActivityLogStatus
 import io.content.scraper.enums.ArticleStatus
-import io.content.scraper.models.Article
-import io.content.scraper.models.KafkaMessage
-import io.content.scraper.models.Source
 import io.content.scraper.repository.ArticleRepository
 import io.content.scraper.repository.SourceRepository
+import io.content.scraper.temporal.workflow.ArticleProcessingRequest
+import io.content.scraper.temporal.workflow.ArticleProcessingWorkflow
+import io.content.scraper.temporal.workflow.DailyAggregationResult
+import io.content.scraper.temporal.workflow.DailyAggregationWorkflow
 import io.github.oshai.kotlinlogging.KotlinLogging
+import io.temporal.client.WorkflowClient
+import io.temporal.client.WorkflowOptions
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.withContext
 import org.springframework.beans.factory.annotation.Value
-import org.springframework.kafka.core.KafkaTemplate
 import org.springframework.stereotype.Service
-import org.springframework.web.reactive.function.client.WebClient
-import java.io.StringReader
 import java.time.Duration
-import java.time.LocalDateTime
-import java.time.ZoneId
 
 @Service
 class CollectorService(
@@ -31,124 +24,78 @@ class CollectorService(
     private val articleRepository: ArticleRepository,
     private val activityLogService: ActivityLogService,
     private val applicationScope: CoroutineScope,
-    private val objectMapper: ObjectMapper,
-    private val kafkaTemplate: KafkaTemplate<String, String>,
-    private val webClient: WebClient,
+    private val workflowClient: WorkflowClient,
+    private val metricsService: MetricsService,
     @Value("\${app.max-retry-count:3}") private val maxRetryCount: Int,
 ) {
     private val logger = KotlinLogging.logger {}
 
     suspend fun start(): Map<String, Int> =
         withContext(applicationScope.coroutineContext) {
-            logger.debug { "Starting scraping job" }
+            logger.debug { "Starting daily aggregation with hierarchical Temporal workflows" }
 
-            val articleCountsBySource = mutableMapOf<String, Int>()
+            try {
+                val workflowOptions =
+                    WorkflowOptions
+                        .newBuilder()
+                        .setWorkflowId("daily-aggregation-${System.currentTimeMillis()}")
+                        .setTaskQueue("DAILY_AGGREGATION_TASK_QUEUE")
+                        .setWorkflowExecutionTimeout(Duration.ofHours(2))
+                        .build()
 
-            sourceRepository.findByIsActiveTrue().forEach { source ->
-                articleCountsBySource[source.name] = 0
+                val workflow = workflowClient.newWorkflowStub(DailyAggregationWorkflow::class.java, workflowOptions)
+                metricsService.recordTemporalWorkflowExecuted("DailyAggregation", "started")
 
-                source.fetchFeed()?.let { feed ->
-                    val count = processFeed(source, feed)
-                    articleCountsBySource[source.name] = count
+                val result: DailyAggregationResult = workflow.runDailyAggregation()
+                metricsService.recordTemporalWorkflowExecuted("DailyAggregation", "completed")
+
+                val resultsBySource = result.sourcesResults.mapValues { it.value.articlesProcessed }
+
+                // Update metrics with aggregation results
+                metricsService.updateActiveSourcesCount(result.activeSources.toLong())
+                result.sourcesResults.forEach { (sourceName, sourceResult) ->
+                    repeat(sourceResult.articlesProcessed) {
+                        metricsService.recordArticleProcessed(sourceName)
+                    }
+                    repeat(sourceResult.articlesFailed) {
+                        metricsService.recordArticleFailed(sourceName, "aggregation_failed")
+                    }
+                    metricsService.recordSourceScraped(sourceName)
                 }
-                sourceRepository.save(source.copy(lastScraped = LocalDateTime.now()))
+
+                activityLogService.logActivity(
+                    ActivityLogAction.SCRAPE.name,
+                    ActivityLogStatus.SUCCESS.name,
+                    "Daily aggregation completed: ${result.activeSources} sources, ${result.totalArticlesProcessed} articles processed, ${result.totalArticlesSuccessful} successful, ${result.totalArticlesFailed} failed",
+                )
+
+                val timeText =
+                    if (result.executionTimeMinutes < 2) {
+                        "under 1 minute"
+                    } else {
+                        "${result.executionTimeMinutes} minutes"
+                    }
+
+                logger.info {
+                    "Daily aggregation completed: ${result.totalArticlesProcessed} articles processed in $timeText"
+                }
+                resultsBySource
+            } catch (e: Exception) {
+                logger.error(e) { "Error starting daily aggregation workflow" }
+                metricsService.recordTemporalWorkflowExecuted("DailyAggregation", "failed")
+
+                activityLogService.logActivity(
+                    ActivityLogAction.SCRAPE.name,
+                    ActivityLogStatus.FAILED.name,
+                    "Failed to start daily aggregation: ${e.message}",
+                )
+
+                throw e
             }
-            activityLogService.logActivity(
-                ActivityLogAction.SCRAPE.name,
-                ActivityLogStatus.SUCCESS.name,
-                "Scraped ${articleCountsBySource.values.sum()} articles from ${articleCountsBySource.size} sources",
-            )
-            logger.debug { "Scraping job completed" }
-            articleCountsBySource
-        }
-
-    private fun Source.fetchFeed(): SyndFeed? =
-        try {
-            val response =
-                webClient
-                    .get()
-                    .uri(this.url)
-                    .retrieve()
-                    .bodyToMono(String::class.java)
-                    .timeout(Duration.ofSeconds(15))
-                    .block()
-
-            val feedInput = SyndFeedInput()
-            feedInput.build(response?.let { StringReader(it) })
-        } catch (e: Exception) {
-            logger.error { "Error fetching feed from ${this.url}: ${e.message}" }
-            null
-        }
-
-    private fun processFeed(
-        source: Source,
-        feed: SyndFeed,
-    ): Int {
-        logger.info { "process feed: ${source.url}" }
-        var articleCount = 0
-        feed.entries.forEach { entry ->
-            if (processEntry(source, entry, feed.link)) {
-                articleCount++
-            }
-        }
-
-        return articleCount
-    }
-
-    private fun processEntry(
-        source: Source,
-        entry: SyndEntry,
-        baseUrl: String,
-    ): Boolean {
-        logger.debug { "Processing entry: ${entry.title}" }
-        val entryLink = getAbsoluteLink(entry.link, baseUrl)
-
-        val existingArticle = articleRepository.findByUrl(entryLink)
-        if (existingArticle != null) {
-            logger.debug { "Article already exists: ${existingArticle.id}" }
-            return false
-        }
-
-        val article =
-            Article(
-                title = entry.title,
-                description = entry.description?.value ?: "",
-                url = entryLink,
-                publishDate =
-                    entry.publishedDate
-                        ?.toInstant()
-                        ?.atZone(ZoneId.of("Asia/Jakarta"))
-                        ?.toLocalDateTime(),
-                source = source,
-            )
-
-        val savedArticle = articleRepository.saveAndFlush(article)
-
-        val parserConfig = source.parserConfig
-        val parsingStrategy = parserConfig?.name ?: source.parsingStrategy
-
-        val kafkaMessage = KafkaMessage(savedArticle.id, entryLink, parsingStrategy)
-        kafkaTemplate.send(
-            CONTENT_TO_SCRAPE,
-            savedArticle.id.toString(),
-            objectMapper.writeValueAsString(kafkaMessage),
-        )
-
-        return true
-    }
-
-    private fun getAbsoluteLink(
-        link: String,
-        baseUrl: String,
-    ): String =
-        if (link.startsWith("http://") || link.startsWith("https://")) {
-            link
-        } else {
-            baseUrl + link
         }
 
     /**
-     * Push articles with DISCOVERED status and less than max retry count to Kafka
+     * Retry articles with DISCOVERED status and less than max retry count using Temporal workflows
      * Returns a map of source names to article counts
      */
     fun retryPendingArticles(): Map<String, Int> {
@@ -168,20 +115,33 @@ class CollectorService(
                 val parserConfig = article.source.parserConfig
                 val parsingStrategy = parserConfig?.name ?: article.source.parsingStrategy
 
-                val kafkaMessage = KafkaMessage(article.id, article.url, parsingStrategy)
-                kafkaTemplate.send(
-                    CONTENT_TO_SCRAPE,
-                    article.id.toString(),
-                    objectMapper.writeValueAsString(kafkaMessage),
-                )
+                val workflowOptions =
+                    WorkflowOptions
+                        .newBuilder()
+                        .setWorkflowId("retry-article-${article.id}")
+                        .setTaskQueue("ARTICLE_PROCESSING_TASK_QUEUE")
+                        .setWorkflowExecutionTimeout(Duration.ofMinutes(10))
+                        .build()
 
-                logger.debug { "Pushed article ${article.id} to Kafka" }
+                val request =
+                    ArticleProcessingRequest(
+                        articleId = article.id,
+                        url = article.url,
+                        parsingStrategy = parsingStrategy,
+                        sourceId = article.source.id,
+                    )
+
+                val workflow = workflowClient.newWorkflowStub(ArticleProcessingWorkflow::class.java, workflowOptions)
+                // Start workflow asynchronously
+                WorkflowClient.start(workflow::processArticle, request)
+
+                logger.debug { "Started retry workflow for article ${article.id}" }
             }
 
             activityLogService.logActivity(
                 ActivityLogAction.RETRY_SCRAPE.name,
                 ActivityLogStatus.SUCCESS.name,
-                "Successfully retried ${pendingArticles.size} pending articles",
+                "Successfully started retry workflows for ${pendingArticles.size} pending articles",
             )
         } catch (e: Exception) {
             logger.error(e) { "Error retrying pending articles" }
